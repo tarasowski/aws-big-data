@@ -27,5 +27,5 @@
       1. Solution -> AWS Glue -> Amazon Athena (SERVERLESS)
       2. Solution -> Amazon Redshift -> Amazon QuickSight (MANAGED)
 
-[Serverless vs. Managed](./serverless-vs-managed.png)
+![serverles vs. managed](./serverless-vs-managed.png)
 
