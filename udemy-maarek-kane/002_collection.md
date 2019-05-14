@@ -371,7 +371,7 @@ Data Retention:
     * ElasticSearch
     * Splunk
 
-![firehose](./firehose-delivery)
+![firehose](./img/firehose-delivery.png)
   
 
 #### Firehose Buffer Sizing
