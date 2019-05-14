@@ -144,7 +144,7 @@ Data Retention:
         Producer Library (KPL) is the way to do it
       * Submits metrics to CloudWatch for monitoring. Everytime you write an
         application with KPL, you can monitor it in CloudWatch.
-      * It supports **Batching** (both turn don by default) - increase
+      * It supports **Batching** (both turned on by default) - increase
         throughput, decrease cost: 
           * **Collect** Records and Write to multiple shards in the same
             PutRecords API call
@@ -167,8 +167,6 @@ Data Retention:
           Library will at some point aggreate it into One Record < 1MB. So
           instead of sending 3 records now, we're sending 1 Record and it's
           still less than 1MB.
-        * Here we have Aggregation to aggreate records into 1 < MB. And we can
-          put all the records into a collection of PutRecords.
         * How does Kinesis knows how long to wait to aggregate a Record? We can
           infulce the batching efficiency by introducing some dely with
           RecordMaxbufferedTime (default 100ms)
@@ -189,3 +187,217 @@ Data Retention:
         * Emits metrics to CloudWatch for monitoring
 
   * **3rd pary libraries**: Spark, Log4j, Appenders, Flue, Kafka Connect, Nifi
+
+#### Kinesis Consumer - Classic
+
+* Kinesis SDK or CLI to read data from Kinesis Streams
+  * Kinesis Consumer SDK - GetRecords
+  * Classic Kinesis - Records are polled (means if you need more data you need
+    to poll the traget shards, making api calls) by consumer from a shard
+  * Each shard has 2 MB total aggregate throughput (each shard 1MB of producer
+    and 2MB of consumer) - e.g. 3 shards 6MB throughput for read
+  * GetRecords returns up to 10 MB of data (then throttle for 5 seconds) or up
+    to 10000 records. It throttles because 10 MB are going over 2MB/s, you need
+    to wait 5 seconds to get another 10MB of data. Or you distribute the polling
+    per second 2MB read.
+  * Maximums of 5 GetRecords API calls per shard per second = 200ms latency.
+    IMPORTANT.
+  * **Example: If 5 consumers application consume from the same shard, means every
+    consumer can poll once a second and receive less than 400KB/s**
+
+* Kinesis Client Library (KCL) - so we produce with the KPL and read with the
+  KCL
+  * Is used to de-aggregate record from the KPL
+  * Java-first library but exists for other languages too (Golang, Python, Node)
+  * Read records from Kinesis produced with the KPL (de-aggregation)
+  * Share multiple shards with multiple consumers in one "group", shard
+    discovery
+  * Checkpointing feature to resume progress. When one application goes down and
+    comes up again, it's able to remember when it was consuming last in order to
+    resume the progress. It uses Amazon DynamoDB table to checkpoint progress
+    over time (save the progress) and synchronize who is going to read which
+    shard.
+  * Leverages DynamoDB for coordination and checkpointing (one row in the table per shard)
+    * Make sure you provision enough WCU/ RCU
+    * Or use On-Demand for DynamoDB
+    * Otherwise DynamoDB my slow down in KCL (there might be an exam question my
+      KCL is not reading fast enough, even throughputs in my Kinesis. The
+      problem is that you have underprovisioned DynamoDB)
+    * Record processors will process the data. It makes easy to threat messages
+      one by one.
+
+* Kinesis Connector Library
+  * Older Java library (2016), leverages the KCL library under the hood
+  * Is used to write data to Amazon S3, DynamoDB, Redshift, ElasticSearch
+  * The connector library must be running on an **EC2 instance** for it to
+    happen.
+  * It's an application that the whole thing is to take data from Kinesis
+    Streams and send it to all the above mentioned applications.
+  * For something you can use Kinesis Firehose (for S3 and Redshift) for others you can use Lambda
+  * Kinesis Connector Library is depricated and is replated by Firehose and
+    Lambda (but can appear in the exam)
+
+* AWS Lambda sourcing from Kinesis
+  * Lambda can source recordds from Kinesis Data Streams (read)
+  * Lambda consumer has a library to de-aggregate record from the KPL
+  * You can produce with the KPL and reading with Lambda using a small library
+  * Lambda can be used to run lightweight ETL to:
+    * S3
+    * DynamoDB
+    * Redshift
+    * ElasticSearch
+    * Anywhere you want
+  * Lambda can be used to trigger notifications / send emails in real time
+  * Lambda has a configurable batch size (to regulate throughputs)
+
+* 3rd pary libraries: Spark, Log4j, Flume, Kafka, Appenders, Connect...
+
+* Kinesis Firehose
+
+* Kinesis Consumer Enhanced Fan-out
+  * New game-changing feature from August 2018
+  * Works with KCL 2.0 and AWS Lambda (Nov 2018)
+  * **Each Consumer get 2 MB/s of provisioned throughput per shard**
+  * Producer -> Kinesis Data Streams <------- SubscribeToShard() Consumer Appliation A
+                                     -------> Push data 2 MB/s (not polling
+                                     anymore)
+  * That means 20 consumers will get 40 MB/s per shard aggregated
+  * No more 2 MB/s!
+  * Enhanced Fan Out: Kinesis pushes data to consumers over HTTP/2. The added
+    benefits:
+      1) We can scale a lot consumer application
+      2) We get reduced latency (~70ms) - before we had 200ms per consumer, so
+      it could only poll 5 times per second.
+  * It costs more, you need to check the pricing
+  * Enhanced Fan-Out vs. Standard Consumers: When to use what?
+    * Standard consumer:
+      * Low number of consuming aplications (1,2,3...)
+      * Can tolerate ~200ms latency
+      * Minimize cost
+    * Enhanced Fan Out Consumers:
+      * Multiple Consumer applications for the same Stream (5 or 10 applications
+        at the same time)
+      * Low Latency requirements ~70ms
+      * Higher costs 
+      * Default limit of 5 consumers using enhanced fan-out per data stream
+
+#### Kinesis Scaling
+
+* Kinesis Opeerations - Adding Shards (Increase Throughput)
+  * Also called "Shard Splitting"
+  * Can be used to increase the Stream capacity (1 MB/s data in per shard) 
+  * Can be used to divide a "hot shard"
+  * The old shard is closed and will be deleted once the data is expired. New
+    shards will be added so the old one get's splitted by new shards. The second
+    shard is hot: `[shard1][shard2][shard3] ---> Splitting shard 2 ---> [shard1][shard4][shard5][shard3]` 
+
+* Kinesis Operations - Merging Shards (Decrease Throughput)
+  * Decrease the Stream capacity and save costs
+  * Can e used to group two shards with low traffic
+  * Old shards are closed and deleted based on data expiration
+  * `[shard1][shard4][shard5][shard3] ---> Merging 1 and 4 ---> [shard6][shard5][shard3]`  
+
+* Kinesis Operations - Auto Scaling
+  * Auto Scaling is not a native feature of Kinesis
+  * The API calls to change the number of shards is UpdateShardCount
+  * We can implement Auto Scaling with AWS Lambda (manually to make it work)
+  * Limitations:
+    * Resharding cannot be done in parallel. Plan capacity in advance
+    * You can only perform one resharding operation at a time and it takes a few
+      seconds
+    * For 1000 shards, it takes 30K seconds (8.3 hours) to double the shards to
+      2000 (remember)
+    * **You can't do the following**: (you don't need to know them for the exam)
+      * Scale more than twive dor each rolling 24-hours period for each stream
+      * Scale up to more than double your current shard count for a stream
+      * Scale down below half your current shrad count for a stream
+      * Scale down below half your current shard count for a stream
+      * Scale up tot more than 500 shards in a stream
+      * Scale a stream with more than 500 shards down unsless the result is
+        fewer than 500 shards
+      * Scale up to more than the shard limit for you account
+
+#### Kinesis Security
+  * Big part of the exam, dedicated section
+  * Control access / authorization using IAM policies
+  * Encryption in flight using HTTPS endpoints (data that we send to Kinesis
+    will be incrypted)
+  * Encryption at rest using KMS
+  * Client side encryption must be manually implemeted (harder)
+  * VPC Endpoints available for Kinesis to access within VPC
+
+
+### Kinesis Data Firehose
+  * Fully Managed Service, no administration
+  * Near RealTime (60 seconds latency minimum for non full batches)
+  * Load data into Redshift / Amazon S3 / ElasticSearch / Splunk
+  * Automatic scaling built-in
+  * Supports many data formats
+  * Data Conversion from JSON to Parquet / ORC (only for S3)
+  * Data Transformations through AWS Lambda (e.g. (CSV -> JSON)
+  * Supports compression wehn target is Amazon S3 (GZIP, ZIP, and SNAPPY)
+  * Only GZIP is the data is further loaded into Redshift
+  * Pay for the amount of data going through Firehose (no provisioned capacity,
+    only billed for used capacity)
+  * Exam will threat you that Spark / KCL can read form KDF. Spark / KCL cannot
+    read from Firehose, they only read from Kinesis Data Streams
+
+#### Kinesis Data Firehose Diagram
+  * Source that can write to Firehose:
+    * SDK: Kinesis Producer Library (KPL)
+    * Kinesis Agent
+    * Kinesis Data Streams
+    * CloudWatch Logs & Events
+    * IoT rules actions
+  * Transformation:
+    * Lambda function: The data can be transformed on the fly. Lambda takes the
+      data, transform it and sends it back before it gets to it's destinations
+      (delivery)
+    * There is a bunch of blueprints available for AWS Lambda to help you
+      transform the data in the format you want.
+  * Delivery (Destinations):
+    * Amazon S3
+      * Source Records can be configured to be stored into another S3 bucket.
+        Means when we apply the transformation with Lambda, we can use 1 bucket
+        for that, and the source data that comes in can be stored into another
+          bucket.
+      * Transformation Failure we can archive that transformation failure into
+        an Amazon S3 bucket
+      * Deliver Failure we can archive that data into an Amazon S3 bucket
+      * **Important:** You don't loose data with Kinesis Firehose, either it
+        ends in your targets, or you will have recollection in other buckets.
+    * Redshift: If Redshift is your destination, the data goes into S3 and there
+      is a copy command that is issued to put that data into Redshift
+    * ElasticSearch
+    * Splunk
+
+![firehose](./firehose-delivery)
+  
+
+#### Firehose Buffer Sizing
+  * Firehose accumulates records in a buffer (from the source) 
+  * The buffer is not flushed on the time, it's flushed on some rules. It's
+    flushed based on time and size rules
+  * Buffer Size (e.g. 32MB): if that buffer size is reached, it's flushed
+  * buffer Time (e.g. 2 minutes): if that time is reached, it's flushed
+  * Firehose can automatically increaese the buffer size to increase throughput
+  * High throughput --> Buffer Size will be hit and buffer will be flushed (min.
+    few mb)
+  * Low throughput --> Buffer Time will be hit and buffer will be flushed (time
+    min 1m)
+
+### Kinesis Data Streams vs. Firehose
+  * Streams:
+    * Going to write customer code (producer / consumer)
+    * Realtime (~200ms latency for classic, ~70ms latency for enhanced fan-out)
+    * Must manage scaling (shard splitting / merging)
+    * Data Storage for 1 to 7 days, replay capability, multi consumers
+    * Use with Lambda to insert data in real-time to ElasticSearch (for example)
+
+  * Firehose:
+    * Fully managed, send to S3, Splunk, Redshift, ElasticSearch
+    * Serverless data transformation with Lambda
+    * Near real time (lowest buffer time is 1 minute)
+    * Automated Scaling
+    * No data storage
+  * With KPL you can produce either into Streams or Firehose
