@@ -50,7 +50,7 @@
     ElasticSearch
 
 ### Kinesis Streams
-* Streams are diviced in ordered Shards / Partitions
+* Streams are divided in ordered Shards / Partitions
 * Data retention is 24 hours by default, can go up to 7 days (time to consume
   the data)
 * Ability to reprocess / replay data. Once you processed that data the data is
@@ -220,7 +220,7 @@ Data Retention:
   * Leverages DynamoDB for coordination and checkpointing (one row in the table per shard)
     * Make sure you provision enough WCU/ RCU
     * Or use On-Demand for DynamoDB
-    * Otherwise DynamoDB my slow down in KCL (there might be an exam question my
+    * Otherwise DynamoDB may slow down in KCL (there might be an exam question my
       KCL is not reading fast enough, even throughputs in my Kinesis. The
       problem is that you have underprovisioned DynamoDB)
     * Record processors will process the data. It makes easy to threat messages
@@ -238,7 +238,7 @@ Data Retention:
     Lambda (but can appear in the exam)
 
 * AWS Lambda sourcing from Kinesis
-  * Lambda can source recordds from Kinesis Data Streams (read)
+  * Lambda can source records from Kinesis Data Streams (read)
   * Lambda consumer has a library to de-aggregate record from the KPL
   * You can produce with the KPL and reading with Lambda using a small library
   * Lambda can be used to run lightweight ETL to:
@@ -283,7 +283,7 @@ Data Retention:
 
 #### Kinesis Scaling
 
-* Kinesis Opeerations - Adding Shards (Increase Throughput)
+* Kinesis Operations - Adding Shards (Increase Throughput)
   * Also called "Shard Splitting"
   * Can be used to increase the Stream capacity (1 MB/s data in per shard) 
   * Can be used to divide a "hot shard"
@@ -293,7 +293,7 @@ Data Retention:
 
 * Kinesis Operations - Merging Shards (Decrease Throughput)
   * Decrease the Stream capacity and save costs
-  * Can e used to group two shards with low traffic
+  * Can be used to group two shards with low traffic
   * Old shards are closed and deleted based on data expiration
   * `[shard1][shard4][shard5][shard3] ---> Merging 1 and 4 ---> [shard6][shard5][shard3]`  
 
@@ -308,11 +308,11 @@ Data Retention:
     * For 1000 shards, it takes 30K seconds (8.3 hours) to double the shards to
       2000 (remember)
     * **You can't do the following**: (you don't need to know them for the exam)
-      * Scale more than twive dor each rolling 24-hours period for each stream
+      * Scale more than twice each rolling 24-hours period for each stream
       * Scale up to more than double your current shard count for a stream
       * Scale down below half your current shrad count for a stream
       * Scale down below half your current shard count for a stream
-      * Scale up tot more than 500 shards in a stream
+      * Scale up to more than 500 shards in a stream
       * Scale a stream with more than 500 shards down unsless the result is
         fewer than 500 shards
       * Scale up to more than the shard limit for you account
@@ -335,7 +335,7 @@ Data Retention:
   * Supports many data formats
   * Data Conversion from JSON to Parquet / ORC (only for S3)
   * Data Transformations through AWS Lambda (e.g. (CSV -> JSON)
-  * Supports compression wehn target is Amazon S3 (GZIP, ZIP, and SNAPPY)
+  * Supports compression when target is Amazon S3 (GZIP, ZIP, and SNAPPY)
   * Only GZIP is the data is further loaded into Redshift
   * Pay for the amount of data going through Firehose (no provisioned capacity,
     only billed for used capacity)
@@ -379,7 +379,7 @@ Data Retention:
   * The buffer is not flushed on the time, it's flushed on some rules. It's
     flushed based on time and size rules
   * Buffer Size (e.g. 32MB): if that buffer size is reached, it's flushed
-  * buffer Time (e.g. 2 minutes): if that time is reached, it's flushed
+  * Buffer Time (e.g. 2 minutes): if that time is reached, it's flushed
   * Firehose can automatically increaese the buffer size to increase throughput
   * High throughput --> Buffer Size will be hit and buffer will be flushed (min.
     few mb)
@@ -399,5 +399,169 @@ Data Retention:
     * Serverless data transformation with Lambda
     * Near real time (lowest buffer time is 1 minute)
     * Automated Scaling
-    * No data storage
+    * **No data storage** - means you have to use it as a component after a
+      stream, since from stream more then one consumer can consume the data.
   * With KPL you can produce either into Streams or Firehose
+
+### AWS SQS - What is a queue?
+
+* Producer --send messages--->  SQS Queue <--poll messages--- consumers
+* Oldest offering (over 10 years old)
+* Fully managed
+* Scaled from 1 message per second to 10,000s per second
+* Default limit to how many mesages can be in the queue
+* Low latency (<10ms on publish and receive)
+* Horizontal scaling in terms of number of consumers
+* Can have duplicate messages (at leas once delivery, aoccasinally)
+* Can have out of order messages (best effort ordering)
+* Limitation of 256KB per message sent
+
+#### SQS - Producing Messages
+* Define Body (String up to 256kb)
+* Add message attributes (metadata - optional - key/value pairs)
+* Provide Delay Delivery (optional)
+
+* Get back
+  * Message identifier
+  * MD5 hash of the body
+
+* In Kinesis we send bytes in SQS we send Strings 
+* In Kinesis we have 1MB in SQS we have 256kb
+* In Kinesis we have ordered data in SQS can be out of order
+* In Kinesis we have mutliple consumers in SQS only 1 consumer
+
+#### SQS - Consuming Messages
+* Consumers
+  * POll for SQS for messages (receive up to 10 messags at a time)
+  * Process the message within the visibiliy timeout
+  * Delete the message using the message ID & receipt handle
+
+SQS --- poll messages---> Message ---process message---> Consumers
+<-------------------------delete messages from SQS-------------
+
+* Messages cannot process by different consumer application
+
+
+#### AWS SQS - FIFO Queue
+* Newer offering (First In, First Out) not available in all regions
+* Namve of the queue must end in .fifo
+* Lower throughput (up to 3000 per second with batching, 300/s without)
+* Messages are processed in order by the consumer
+* Messages are sent exactly one
+* 5-minute interval de-duplication using "Duplication ID"
+
+#### Larger SQS messages - SQS Enxtended Client
+
+* Message size limit is 256KB, how to send messages?
+* Using the SQS Extended Client (Java Library)
+* Producer ---> sends large payload e.g. 10MB --> S3 Bucket
+* Producer ---> sends small metadata message --> SQS Queue --- small metadata message ---> Consumer ---> Consumer retrieve large message from S3 (see above)
+
+#### Use Cases for SQS
+
+* Decouple applications (e.g. to handle payments asynchronously)
+* Buffer writes to a database (e.g. voting application)
+* Handle large loads of messages coming in (e.g. email sender)
+* SQS can be integrated with Auto Scaling through CloudWatch (if you have EC2
+  instances reading from SQS)
+
+
+#### SQS Limit
+
+* Max. of 120,000 in-flight messages being processed by consumers
+* Batch Requests has a maximum of 10 messages - max 256KB
+* Message content is XML, JSON, Unformatted text
+* Standard queues have an unlimited TPS (throughputs)
+* FIFO queues support up to 3,000 messages per second (using batching)
+* Max message size is 256KB (or use Extended Client)
+* Data retention from 1 minute to 14 days (once the message is read, the
+  messages are deleted)
+* Pricing:
+  * Pay per API Request
+  * Pay per network usage
+
+
+#### SQS Security
+
+* Encryption in flight using the HTTPS endpoint
+* Can enable SSE (Server Side Encryption) using KMS
+  * Can set the CMK (Customer Master Key) we want to use 
+  * SSE only encrypts the body, not the metadata (message ID, timestamp,
+    attributes)
+* IAM policy must allow usage of SQS (which user is allowed to send to which
+  Queue)
+* SQS queue access policy
+  * Finer grained control over IP
+
+### Kinesis Data Streams vs. SQS
+
+* When to use Kinesis when to use SQS? (important for the exam)
+
+* Kinesis Data Streams
+  * Data can be consumed multiple times by many consumers
+  * Data will be delted after the retention period (immutable data)
+  * Ordering of records is preserved (at the shard level) - even during replays
+  * Build multiple applications reading from the same stream independenlty
+    (it's called a Pub/Sub)
+  * You can use Spark "Streaming MapReduce" to query the data and process it 
+  * Checkpointing needed to track progress of consumption
+  * Shards (capacity) must be provided ahead of time (Shard splitting / shard
+    merging) but we need to define the TPS upfront
+  * Max. payload 1MB
+
+* SQS
+  * Queue, decouple applications
+  * One applicaiton per queue
+  * Records are deleted after consumption 
+  * Messages are processed independently for standard queue (out of order)
+  * Ordering for FIFO queues (decreased throughput)
+  * Capability to "delay" messages
+  * Dynamic scaling of load (no-ops) - scales automatically
+  * Max. payload 256Kb
+
+![kinesis vs. sqs](./img/kinesis-vs-sqs.png)
+
+* Firehose has no data retention because it's used only to deliver data
+
+### SQS vs Kinesis - Use cases 
+
+* SQS Use cases:
+  * Order Processing
+  * Image Processing
+  * Auto scaling queues according to messages
+  * Buffer and Batch messages for future processing (inserting into database or
+    maybe request offloading
+  * More for development driven workflow
+  * Used for decoupling of applications
+
+* Amazon Kinesis Data Streams Use cases:
+  * Fast log and event data collection and processing
+  * RealTime metrics and reports
+  * Mobile data capture
+  * RealTime data analytics
+  * Gaming data feed
+  * Complex Stream Processing
+  * Data Feed from "Internet of Things"
+  * Used for big data streaming
+
+
+### IoT Overview
+
+* We deploy IoT devies ("Thing") - they call an object (car, lightbulb, etc.) as
+  a Thing. It's a connected device to your AWS infrastructure.
+* We configure them and retrieve data from them
+* Thing registry will give the device id/authentication/security)
+* The Things needs to communicate with our cloud and for this it uses a "Device
+  gateway". Is a managed service that allows you to communicate with your IoT
+  Thing.
+* The "Device gateway" sends a message to an IoT Message Broker and this message
+  will be sent to many different destinations e.g.
+* There is a IoT Rules Engine that rules the messages based on the rules and
+  sends it to targets such as Kinesis, SQS, Lambda. With the rules engine we can
+  send the message to other targets.
+* Device Shadow is shadow of the device, even if the termostat is not connected
+  to the internet, you can change it's state on the "Device shadow" -> e.g. we
+  want to have the temperature of 20C, and whenever the device gets reconnected
+  we can say that the IoT Thing needs to be 20C now.
+
+![iot overview](./img/iot-overview.png)
