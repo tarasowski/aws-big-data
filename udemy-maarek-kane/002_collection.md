@@ -547,6 +547,8 @@ SQS --- poll messages---> Message ---process message---> Consumers
 
 ### IoT Overview
 
+* The main focus is on IoT Core. Go to the IoT section in AWS Console and check
+  out the tutorial to learn more!
 * We deploy IoT devies ("Thing") - they call an object (car, lightbulb, etc.) as
   a Thing. It's a connected device to your AWS infrastructure.
 * We configure them and retrieve data from them
@@ -565,3 +567,205 @@ SQS --- poll messages---> Message ---process message---> Consumers
   we can say that the IoT Thing needs to be 20C now.
 
 ![iot overview](./img/iot-overview.png)
+
+#### IoT Device Gateway
+
+* Server as the entry point for IoT devices connecting to AWS
+* Allows devices to esucrely and eficiently communicate with AWS IoT
+* Supports the MQTT, WebSocket, and HTTP 1.1 protocols
+* Fully managed and scales automatically to support over a billion devices
+* Serverless
+  (real world)                                  (aws cloud)
+* Thing (Bike) ---- sending MQTT messages ---> Device Gateway
+
+#### IoT Message Broker
+
+* Part of the Device Gateway
+* Pub/sub (publishers/subscribers) messagin pattern - low latency
+* Devices can communicate with one another this way 
+* Messages sent using the MQTT, WebSockets, or HTTP 1.1. protocols
+* Message are publsihed into topics (just like SNS)
+* Message Broker forwards messages to all clients connected to the topic
+* Thing (Bike) ---- sending MQTT messages --> Device Gateway --- publishes the
+  message to ----> Message broker / Topic ---> Connected devices 
+
+#### IoT Thing Registry = IAM of IoT  
+* All connected IoT devices are represented in the AWS IoT registry
+* Organizes the resources associated with each device in the AWS Cloud
+* Each device gets a unique ID
+* Supports metadata for each device (e.g. Celsius vs. Fahrenheit, etc)
+* Can create X.509 certificate to help IoT devices connect to AWS
+* IoT Groups: group devices together and apply permissions to the group
+
+#### Authentication
+
+* Once Thing (IoT device) is registered with the Thing Registry. You can use
+  following method to authenticate the device with the Device Gateway.
+  * 3 possible authnetication methods for Things:
+    * Create X.509 certificates and load them securly onto the Thing
+    * AWS SigV4
+    * Custom tokens with Custom authorizers
+
+
+* For mobile apps:
+  * Cognito identities (extention to Google, Facebook, login, etc)
+
+* Web / Desktop / CLI:
+  * IAM
+  * Federated Identities
+
+* AWS IoT policies:
+  * Attached to X.509 certificates or Cognito Identities
+  * Able to revoke any device at any time
+  * IoT Policies are JSON documents
+  * Can be attached to groups instead of individual Things.
+
+* IAM Policies:
+  * Attached to users, groups, roles
+  * Used for controlling IoT AWS APIs
+
+#### Device Shadow
+
+* JSON document representing the state of a connected Thing
+* We can set the state to a different desired state (e.g. light on)
+* The IoT thing will retrieve the state when online and adapt
+
+#### Rules Enginge
+
+* Rules are defined on the MQTT topics
+* Rules = when it's triggered | Action = what it does
+* Rules use cases: 
+  * Augment or filter data received from a device
+  * Write data received from a device to a DynamoDB database
+  * Save a file to S3
+  * Send a push notification to all users using SNS
+  * Publish data to a SQS queue
+  * Invoke a Lambda function to extract data
+  * Process messages from a larger number of devices using Kinesis
+  * ElasticSearch
+  * Machine Learning
+  * CloudWatch
+
+* Rules need IAM Roles to perform their actions
+
+* IoT Topic has IoT Rules and those rules have IoT Rules Actions: Send data to
+  Kinesis, DynamoDB, SQS, SNS, S3, AWS Lambda
+
+
+#### IoT Greegrass
+
+* IoT Greegrass brings the compute layer to the device directly
+* You can execute AWS Lambda functions on the device:
+  * Pre-process data
+  * Execute predictions based on ML models
+  * Keep device data in sync
+  * Communicate between local devices
+
+* Operate offline
+* Deploy functions from the cloud directly to the devices
+
+
+
+#### Database Migration Service (DMS)
+
+* Moving the data from on-premise to the cloud. You do this by replicating data
+  to the cloud
+* Quickly and securly migrate database to AWS, resilient, self healing
+* The source database remains available during the migration
+* Supports
+  * Homogeneous migrations: e.g. Oractel to Oracle
+  * heterogeneous: e.g. Microsoft SQL Server to Aurora
+* Consinious Data Replication using CDC
+* You must create an EC2 instance to perform the replication tasks
+* Source DB -----> EC2 Instance Running DMS ----> Target DB
+
+#### DMS Sources and Targets
+
+* Source:
+  * On-premise and EC2 instances databases: Oracle, MS SQL Server, MySQL,
+    MariaDB, PostgreSQL, MongoDB, SAP, DB2
+  * Azure: Azure SQL Database
+  * Amazon RDS: all including Aurora
+  * Amazon S3
+
+* Targets:
+  * On-premise and EC2 instances databases: Oracle, MS SQL Server, MySQL,
+    MariaDB, PostgreSQL, SAP
+  * Amazon RDS
+  * Amazon Redshift
+  * Amazon DynamoDB
+  * Amazon S3
+  * ElasticSearch Service
+  * Kinesis Data Streams
+  * DocumentDB
+
+#### AWS Schema Conversion Tool (SCT) - How does the conversion works?
+
+* Convert your Database's Schema from one engine to another
+* Example OLTP: (SQL Server or Oracle) to MySQL, PostgreSQSL, Aurora
+* Example OLAP: (Teradata or Oracle) to Amazon Redshift
+* You can use AWS SCT to create AWS DMS endpoints and tasks.
+
+
+### Direct Connect
+
+* You need to setup a Virual Private Gateway on your VPC
+* Accessp public resources (S3) and private (EC2) on same connection
+* Use Cases:
+  * Increate bandwith throughput - working with large data sets - lower cost
+  * More consistent network experience - applications using real-time data feeds
+  * Hybrid Environemtns (on prem + cloud)
+  * Enhanced security (private connection)
+* Supports both IPv4 and IPv6
+* High-availability: Two DC as failover or use Site-to-Site VPN as a failover
+
+![direct
+connect](https://docs.aws.amazon.com/whitepapers/latest/aws-vpc-connectivity-options/images/aws-direct-connect.png)
+
+#### Direct Connect Gateway
+
+* If you want to setup a Direct Connect to one or more VPC in many different
+  regions (same account), you must use a Direct Connect Gateway
+
+![direct
+connect](https://docs.aws.amazon.com/whitepapers/latest/aws-vpc-connectivity-options/images/aws-direct-connect-gateway.png)
+
+
+### Snowball
+
+* Physical data transport solution that helps moving TBs or PBs of data in or
+  out of AWS
+* Alternative to moving data over the network (and pying network fees)
+* Secure, tamper resistant, uses KMS 256 bit encryption
+* Tracking using SNS and text messages. E-ink shipping
+* Pay per data transfer job
+* Use cases: large data cloud migrations, DC decommission, disaster recovery
+* If it takes more than a week to transfer over the network, use Snowball
+  devices! 
+
+#### Snowball Process
+
+* Request snowball devices from the AWS console for delivery
+* Install the snowball client on your server
+* Connect the snowball to your servers and copy files using the client
+* Ship back the device when you#re done (goes to the right AWS facility)
+* Data will be loaded into an S3 bucket
+* Snowball is completely wiped
+* Tracking is done using SNS, text messages and the AWS console
+
+#### Snowball Edge
+
+* Snowball Edge add computational capability to the deice
+* 100 TB capacity with either:
+  * Storage optimized - 24 vCPU
+  * Compute optimized - 52 vCPU & optinal GPU
+* Supports a custom EC2 AMI so you can perform processing on the go
+* Supports custom Lambda functions
+* Very useful to pre-process the data while moving
+* Use cases: data migration, image collation, IoT capture, machine learning
+
+#### Snowmobile
+
+* Transfer exabytes of data (1 EB = 1,000 PB = 1,000,000TBs)
+* Each Snowmobile has 100 PB of capacity (use multiple in parallel)
+* Better than Snowball if you transfer more than 10PB
