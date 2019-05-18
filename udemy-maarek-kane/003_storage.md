@@ -475,7 +475,7 @@
 
 #### Scan 
 * Scan the entire table and filter out data (inefficient)
-* Return up to 1mb of data - use pagination to keep on reading
+* Return up to 1MB of data - use pagination to keep on reading
 * Consumes a lot of RCU
 * Limit impact using Limit or reduce the size of the result and pause
 * For faster performenace, use parallel scans:
@@ -483,3 +483,105 @@
   * Increases the throughput and RCU consumed
   * Limit the impact of parallel scans just like you rwould for Scans
 * ProjectionExpression + FilterExpression (no charge to RCU)
+* Scan will be used by Hive when we query data from DynamoDB
+
+
+#### Indexes LSI (Local Secondary Index)
+* Alternate range key for your table, local to the hash key
+* Up to five local secondary indexes per table
+* The sort key constsi of exactly one scalar attribute
+  * String, Number or Binary
+* Must be defined at table creation time
+
+#### GSI (Global Secondary Index)
+* To speed up queires on non-key attributes
+* GSI = partition key + optional sort key
+* The index is a new "table" and we can project attributes to it
+
+
+#### DynamoDB DAX
+* DynamoDb Accelerator
+* Seamless cache for DynamoDB, no application re-write
+* Writes go through DAX to DynamoDB
+* Micro second latency for cached reads & queries
+* Solves the HOT key problem (too many reads)
+* 5m TTL for cache by default
+* Up to 10 nodes in the cluster
+* Multi AZ (3 nodes minimum recommend for production - high availability)
+* Secure (Encryption at rest)
+* If you have high read throughput and reads always the same data, you can
+  activate DAX to use a cache
+
+#### DynamoDB Streams
+* React to changes in realtime in the DynamoDB table (create, update, delete)
+  will end up in the DynamoDB stream.
+* Stream can be read by AWS lambda, and we can then do:
+  * React to changes in real time (welcome email to new users)
+  * Create derivative tables / views
+  * Insert into ElasticSearch
+* Could be used for Cross Region Replication using Streams
+* Stream has 24 hours of data retention 
+* Configurable batch size (up 10 1,000 rows or 6MB)
+* Consuming streams with Kinesis!!!
+* Use the KCL library to direclty consume from DynamoDB Streams
+* You just need to add a "Kinesis Adapter" library
+* The interface and programming is exactly the same as Kinesis
+* That's the alternative to using AWS Lambda
+
+#### DynamoDB TTL (Time to Live)
+* Expire data or delete data based on time
+* TTL is provided at no extra cost, deletion do not use WCU / RCU
+* TTL is background task operated by the DynamoDB service itself
+* Helps reduce storage and manage the table size over time
+* TTL is enabled per row (you define a TTL column)
+* Within 48 hours of expiration the data will be deleted
+* To recover DynamoDB can help you, because those are there as delete events
+  (only within 24 hours)
+* Simply add an attribute e.g. expire_on and enable TTL and use TTL attribute
+  expire_on
+
+#### DynamoDB Security
+* VPC endpoints to access DynamoDB without internet
+  * Access controlled by IAM
+  * Encryption at rest using KMS
+  * Encryption in transit using SSL / TLS
+* Backup and Resore feature available
+  * Point in time restore like RDS
+  * No performance impact
+* Global Tables
+  * Multi region, fully replicated, high performance
+* Amazon Database Migration Service (DMS) can be used to migrate to DynamoDB
+
+#### ElastiCache Overview
+* The same way RDS is to get managed Relational Database
+* ElastiCache is to get managed Redis or memcached
+* Caches are in-memory databases with really high performance workloads, low
+  latency
+* Helps reduce load off of databases for read intensive workloads
+* Helps make your application stateless
+* Write Scaling using sharding
+* Read Scaling using Read Replicas
+* Multi AZ with Failour Capability
+
+#### Redis
+* Redis is an in-memory key-value store
+* Store low latency (sub ms)
+* Cache survive reboots by default (it's called persitence)
+* Great to host:
+  * User sessions
+  * Leaderboard (for gaming)
+  * Distributed states
+  * Releive pressure on database such as RDS
+  * Pub / Sub capability for messaging
+* Multi AZ with Automatic Failover for disaster recovery if you don't want to
+  lose your cache data
+* Support for Read Replicas
+
+#### Memcached
+* Memchached is an in-memory object store
+* Cache doesn't survive reboots
+* Use cases:
+  * Quick retrieval of objects from memory
+  * Cache often accessed objects
+* Overall, Redis has largely grown in popularity and has better feature sets
+  than Memcached
