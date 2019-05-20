@@ -21,7 +21,7 @@
   * Powershell
   * Ruby
 * Lambda triggers:
-  * S3, SES, Kinesis Streams/Firehose (Lambda polling data into a Stream, Kinesis is not pushing the data into Lamda), DynamoDB, SNS, SQS, AWS config, IoT, Lex, CloudWatch,
+  * S3, SES, Kinesis Streams/Firehose (Lambda polling data from a Stream, Kinesis is not pushing the data into Lamda), DynamoDB, SNS, SQS, AWS config, IoT, Lex, CloudWatch,
     CloudFormation, Gateway, Cognito, CodeCommit
 * S3 --- triggers --> Lambda ----> Elasticsearch Service
 * S3 --- triggers --> Lambda -- activates the pipeline --> Data Pipeline
@@ -206,3 +206,202 @@
   * can use reserved instances on long-running clusters to save $
 * Connect directly to master to run jobs
 * Submit ordered steps via the console
+
+#### EMR / AWS Integration (what makes a service unique)
+
+* Amazon EC2 for the instances that comprise the nodes in the cluster
+  * So instead trying and provision your Hadoop nodes itself, you letting AWS
+    doing it for your. It gives also to choose the instances like spot to save
+    $$$.
+* Amazon VPC to configure the virtual network in which you launch your instances
+* Amazon S3 to store input and output data
+  * Normally on a Hadoop cluster you're limited to the storage, but on EMR, you
+    can use S3
+* Amazon CloudWatch to monitor cluster perfromance and configure alarms
+* AWS IAM to configure permissions
+* AWS CloudTrail to audit requests made to the service
+* AWS Data Pipeline to schedule and start your clusters
+  * If you have self-contained job to spin up and shutdown, you can do it with
+    Data Pipeline
+
+#### EMR Storage
+* Normally Hadoop cluster only uses (HDFS), but on EMR you have many choices:
+  * HDFS: 
+      * Distributes your data to store across different data clusters. It allows
+        you to run the code that analyzes your data on the same instance the data
+        is stored. It means a good performance optimization. However if you
+        shutdown your cluster the data is lost. That's the downside!
+      * Each file in HSDF is stored as blocks and is distributed across entire
+        Hadoop cluster. Means if you have large file it's going to be broken into
+        blocks, and those blocks are going to be stored in multiple places for
+        backup purposes. By default the block size is 128MB. So if you have a big
+        file and it's going to be store in HDFS it's going to be split into 128MB
+        chunks.
+      * HDFS is ephemeral. When you terminate your cluster the data is gone.
+        However it's useful for caching intermediate result of processing or for
+        workloads that have significant random IO. If you are going to run your
+        cluster without a shutting down, it's now a problem. But if you want to
+        do some cost optimization and need to shutdown your cluster, you should
+          be look for durable storage. See EMRFS (EMR file system)
+  System). 
+  * EMRFS: access S3 as if it were HDFS
+    * Creates a system that looks like HDFS but it's backed by S3. If you
+      terminate your cluster, your data will still live in S3 and you don't
+      loose anything
+    * EMRFS extends Hadoop. You can use HDFS or S3.
+    * EMRFS Consistent View - Optinal feature for S3 consistency
+      * You have a consistency problem, if you have bunch of different nodes
+        write or read data from S3 at the same time. What happens if one nodes
+        writes to the same place, while other tries to read data from. An HDFS
+        there is no such an issue, because that is processed on the same node
+       where it's stored. But in S3 you have a consistency problem. That is what
+       EMRFS consistent view solves for you. When you create a cluster with this
+       feature enabled, EMRFS will use DynamoDB to store object meta data and
+       track consistency for you.
+    * Uses DynamoDB to track consistency
+  * Local file System: locally conntected disks. Useful for storing temp data,
+    buffers, scratch data, data that changes often.
+  * EBS for HDFS: EMR automatically attaches EBS 10gb volume as the root device
+    to enhance your performance. You can additional EBS. You can also save costs
+    to reduce EBS if you don't needed. EMR will delete this values once the
+    cluster is shutdown.
+      * You cannot attach EBS to a running cluster. You can only attach EBS when
+        launching a cluster. And when you manually detach it, EMR will treat it
+        as a failure. 
+
+#### EMR Promises
+* EMR charges by the hour (in additional to EC2 charges) - not a serverless. You
+  provision a fixed amount of servers. If you need to store your data you need
+  to run it consistently.
+  * Plus Ec2 charges
+* Provisions new nodes if a core node fails
+* Can add and remove tasks nodes on the fly
+  * Spot instances as task nodes adding
+* Can resize a running cluster's core nodes
+ 
+#### So... what's Hadoop?
+
+* The 3 components are the core of Hadoop
+  * MapReduce: Is a software framework for easily writing applications that
+    process wast amounts of data in parallel on large clusters commodity
+    hardware in reliable fault-tolerant matter. A map reduce program will
+    consist of map functions that maps data to sets of key/value pairs, called
+    intermediate results and reduce functions that combine the intermediate
+    results applies additional algorithms and produces the final output from
+    your system. And all this can be parallelized across your entire cluster.
+    You don't see MapReduce using these days, because there are newer systems
+    that can perform the same operations
+  * YARN: yet another resource negotiator. It's a component that centrally
+    manages Hadoop resources for multiple data processing frameworks. What gets
+    run where!
+  * HDFS: distributed file system for Hadoop. It distributes the data across the
+    instances in the cluster and it stores multiple copies of that data on
+    different instances to ensure that no data is lost if an instance fails.
+      * Ephemeral storage, that data will be lost if you terminate your EMR
+        cluster. It's stored on the cluster itself.
+
+#### Apache Spark
+
+* The things that is now taking place of MapReduce is Apache Spark
+* It's an open source distributed processing system commonly used for big data
+  workloads.
+* It's secret is using in-memory caching. It does a lot of working in-memory
+  instead on disk. 
+* It uses direct cyclic graphs to optimize it's query execution
+* Spark provides development APIs in Java, Scala, Python and R. You do need to
+  write code in order to use Spark. However there are lot of libraries you can
+  use.
+    * Use cases:
+      * Streaming: can be used with Apache Streaming, allows you to process data
+        collected from Amazon Kinesis but also things outside of AWS system such
+        as Apache Kafka or any other data stream.
+      * Streaming Analytics: in a fault tolerant-way and you can write those
+        results to HSFS or S3. 
+      * Machine Learning: it includes library called ML lib. Which is a library
+        for ML that work on data at massive scale.
+      * Interactive SQL: using Spark SQL used for low latency interactive
+        queries. We're using either SQL or HiveQL.
+* Spark is not made for OLTP or batch processing. Spark jobs take some time to
+  complete because it's distributed work across the cluster, and collect the
+  result back to it.
+* It's not meant for realtime usage, usually more for analytics applications.
+  Doing larger tasks on a regular schedule
+
+#### How Spark Works?
+
+![spark works](./img/spark-works.png)
+
+* Spark processes are spread through entire cluster. The driver of the whole
+  thing is called Spark Context. It is within your main program, the main
+  program is calles as a driver program or driver script. That's the actual code
+  of your program/script that tells the Spark cluster what you want to do with
+  your data.
+* Spark context will connect the different cluster managemers that will take
+  care of allocating all the resources that your driver script needs across
+  different applications. In a case of EMR, it's going to be using Apache YARN.
+  Because that's a component of Hadoop installed on a cluster. However you can
+  also use Apache Spark outside of a Hadoop cluster, it has it's own cluster
+  manager that you can deploy. So you can have a cluster that just runs Spark
+  and nothing else. Once the cluster manager has decided how to distribute that
+  work. Spark will require Executors.
+* Executors on nodes of the cluster. Executors are processes that run
+  computations and store the data for your applications. The application code is
+  then sent to each executor. And in the final step the Spark Context sends the
+  taks to the Executors to run.
+
+![spark
+works](https://cdn-images-1.medium.com/max/1200/1*z0Vm749Pu6mHdlyPsznMRg.png)
+
+#### Spark Components
+* Spark Core (it's the foundation for the platform responsible for memory
+  management, fault recovery, scheduling, distributing and monitoring jobs and
+  interactive with stores systems):
+  * Spark Streaming: is also built on top of Spark core. It integrates with
+    Spark SQL to use data sets as well. Streaming is a real-time solution that
+    leverages Spark core fast scheduling capabilities to do streaming analytics.
+    It ingest data in mini batches and it enables analytics on that data with
+    the same application code you would write for batch analytics. It supports
+    data from different streaming sources inc. Kafka, Flume, HDFS, ZeroMQ,
+    Kinesis.
+  * Spark SQL: is a distributed query engine that provides low latency
+    interactive query up to a 100x faster than MapReduce. It includes a cost
+    based optimizer, columnar storage and code generation for faster queries.
+    And it supports various data sources such as json, hdfs, hive, orc and
+    parquet. You can import data into Spark from pretty much anything. Also
+    supports quering Hive tables using SQL. It contains a construct that is
+    knows as a data set: it basically let's you view the data that you have on
+    Spark as a giant database. And using SQL to interact with your data, it
+    makes the development of Driver scripts a lot more simple. When you write
+    Spark code, it uses the data sets that are exposed through SQL.
+  * MLLib: is built on top of Spark core and it's a library to do machine on
+    data at large scale. Can read data from HDFS, HBase or any Hadoop data
+    source as well as S3 on EMR.
+    learning
+  * GraphX: distributed Graph processing framework. Graphs in the data structure
+    sense e.g. Graph of social network users. 
+
+![spark](https://cdn.intellipaat.com/mediaFiles/2017/02/Components-of-Spark.jpg)
+![spark](https://www.oreilly.com/library/view/data-analytics-with/9781491913734/assets/dawh_0401.png)
+
+#### Spark Structured Streaming
+
+* Spark applications usually use a data set in your code to refer to your data. 
+* A dataset is treated like a database table. With Spark Streaming and
+  structured streaming in particular. You can think of your streaming as a
+  database that keeps growing forever. As new data is received by the stream, it
+  just keeps adding more and more rows to that virual database table in form of
+  a data set. You can query this data by using windows (time)
+
+![spark streaming](./img/spark-streaming.png)
+
+
+#### Spark Streaming + Kinesis
+* Kinesis Producer(s) ---> AWS Kinesis Data Streams ---> Spark Dataset
+  implemented from KCL (built on top of KCL)
+
+#### Spark + Redshift
+* Redshift is a massive distributed warehouse
+* spark-redshift package allows Spark datasets from Redshift
+  * It's a Spark SQL data source
+* Useful for ETL using Spark
+* Amazon S3 ----> Redshift ---> Amazon EMR (Spark) (ETL) ----> Redshift
