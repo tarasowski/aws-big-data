@@ -405,3 +405,293 @@ works](https://cdn-images-1.medium.com/max/1200/1*z0Vm749Pu6mHdlyPsznMRg.png)
   * It's a Spark SQL data source
 * Useful for ETL using Spark
 * Amazon S3 ----> Redshift ---> Amazon EMR (Spark) (ETL) ----> Redshift
+
+
+### Apache Hive
+* Hive helps you to execute SQL code on underlying unstructured data that lives
+  in Hadoop Yarn or S3 in the case of EMR.
+* Hive sits on top of MapReduce to figure out how to distribute the processing
+  of SQL in the underlying data
+* There is also another engine `Tez` that can take place of MapReduce. `Tez`is
+  kinda Apache Spark and uses a lot of in-memory to accelerate things.
+* Hive exposes SQL interface to your underlying data stored on your EMR cluster.
+
+#### Why Hive?
+* Uses familiar SQL syntax (HiveQL)
+* Interactive - you can log into cluster and from a webpage type your SQL  queries
+  * It' interactive but not that fast
+  * But easier and faster than Apache Spark code or MapReduce code
+* Scalable - works with "big data" on a cluster
+  * Really most appropriate for data warehouse applications
+* Easy OLAP queries - WAY easier than writing MapReduce in Java
+* Highly optimized
+* Highly extensible - external apps can communicate with Hive from outside.
+  * user defined functions
+  * Thrift server 
+  * JDBC / ODBC driver
+* Hive is not for OLTP
+
+#### Hive Metastore
+
+* Hives tries to provide interface for unstructured data that can be used with
+  SQL
+* It's basically sitting on top of massive csv files or something you store on
+  HDFS or EMRFS or what ever you have on your cluster
+* So somewhere the metadata about the data has to be stored such as:
+  * This is what this columns in raw data mean
+  * This are the data types etc.
+* This information is stored in Hive Metastore
+* See below the code how to organize the data
+* Hive maintains a "metastore" that imparts a structure you define on the
+  unstructured data that is stored on HDFS
+ 
+
+```SQL
+CREATE TABLE ratings(
+  userID INT,
+  movieID INT,
+  rating INT,
+  time INT)
+ROW FORMAT DELIMETED
+FILEDS TERMINATED BY `\t`
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH `${env:HOME}/ml-100k/u.data`
+OVERWRITE INTO TABLE ratings;
+```
+
+#### External Hive Metastores
+
+* Metastore is stored in MySQL database on the master node by default
+  * It should be stored in one place so everyone has access to it, to have a
+    consistent view how this data should be interpreted across your cluster.
+* This is not great e.g. if you shut down your master node or something happens
+  to it. 
+* Hives offer the ability to have an external metastores (outside of the cluster) offer better resiliency / integration
+  * AWS Glue Data Catalog
+  * Amazon RDS
+* You can store that metastore in alternative places
+  * Hive metastore sounds like a lot a Glue Data catalogue. They server the same
+    functions. They basically maintaining structure information on unstructured
+    data. How do I map that unstructured data to table columns and names and
+    data types that will allow me to treat that data as straight up SQL table.
+* You can store the Hive Metastore within AWS Glue catalog itself. You can
+  expose the data directly on Hive where AWS EMR can get to it. But also exposes
+  the same metadata to AWS Redshift, Amazon Athena and it can refer to
+  underlying data stored in S3, but use the metadata stored in the AWS Glue Data
+  Catalog to impart structure on it.
+* This allows you to centralize metadata in one place not just for Hive or for
+  everything else that required metadata in the AWS ecosystem.
+* It's alow possible to store your Hive metastore on external Amazon RDS system
+  e.g. Amazon Aurora. So instead of storing you Hive metastore in the MySql
+  database in the master node, you can choose to store that in external RDS, it
+  will be persistent.
+
+![hive metastore](./img/hive-metastore.png)
+
+
+#### Other Hive / AWS integration points (with EMR)
+* Load table partitions from S3 
+  * You can store your data in S3 under different subdirectories
+    yyyy-mm-dd/device or device/yyyy-mm-dd etc.
+  * Those are going to be translated into table partitions and you can do it
+    automatically with Hive on EMR (alter table recover partitions)
+* Write tables in S3
+* Loads scripts from S3
+  * For custom MapReduce operations
+  * Hive can pick that up directly
+* DynamoDB as an external table
+  * You can process DynamoDB data to process with Hive on EMR
+  * Load the results back to DynamoDB or copy to S3
+  * Allows to copy data from DynamoDB to HDFS or EMRFS or vice versa
+  * Using Hive on EMR you can perform join operations between tables
+
+#### Apache Pig on EMR
+* Pig as well as Hive are pre-installed on EMR
+* Pig is an alternative interface to MapReduce
+* Writing mappers and reducers by hand takes a long time.
+* Pig introduces Pig Latin, a **scripting language** that lets you use SQL-like
+  syntax to define your map and reduce steps.
+    * Instead of writing Java code for MapReduce code. It's sort of abstraction
+      on top of that. It allows you to use high level language.
+* Highly extensible with user-defined functions (UDF's)
+  * You can expand Pigs functionality with your own functions
+* Allows you to analyse your code in a distributed manner. It looks like SQL,
+  it's not but also not to hard too.
+
+![pig](https://qph.fs.quoracdn.net/main-qimg-703f5d1f767006583c71fb20da33cb10)
+
+#### Pig / AWS Integration
+* Ability to use multiple file systems (not just HDFS)
+  * query data in S3 through EMRFS
+* Load JAR's and scripts from S3
+
+#### HBase
+* Comes pre-install on EMR
+* Non-relational, petabyte-scale database (distributed on EMR cluster)
+* Based on Google's BigTable, on top of HDFS
+  * You have unstructured data spread across your entire Hadoop cluster. HBase
+    can treat that like a non-relationsal NoSQL database and allows you to issue
+    fast queries on it.
+* In-memory
+  * That's the reason why it's so fast
+* Hive integration
+  * You can use Hive to issue SQL style commands 
+
+#### HBase sounds like a lot like DynamoDB
+* If you want to store your data on the EMR cluster
+* Both are NoSQL databases intended for the same sort of things
+* But if you're all-in with AWS anyhow, DynamoDb has advantages
+  * Fully managed (auto-scaling)
+  * More integration with other AWS services
+  * Glue integration
+* HBase has some advantages though:
+  * Efficient storage of sparse data
+  * Appropriate for high frequency counter (constent reads & writes)
+  * High write & update throughput
+    * If you do a lot of writes, HBase can be a better solutions
+  * More integration with Hadoop
+* **Important:** At the end of the day it comes to what eco-system you're trying
+  to integrate with? If it's AWS, DynamoDB is a good choice. However if you want
+  to integrate with Hadoop itself, you should use HBASe
+
+#### HBase / AWS integration
+* Can store data (StoreFiles and metadata) on S3 via EMRFS
+* Can back up to S3
+
+
+### Presto on EMR
+* It can connect to many different "big data" databases and data stores at once,
+  and query across them
+* **Interactive** queries at **petabyte scale**
+* Familiar SQL syntax
+* Optimized for OLAP - analytics queries, data warehousing
+* Developed, and stil partially maintained by Facebook
+* This is what Amazon Athena uses under the hood
+  * Athena is a serverless version of presto with a nice interace!!!
+* Exposes JDBC, Command-Line and Tableau interfaces
+* Presto connectors:
+  * HDSF
+  * S3
+  * Cassandra
+  * MongoDB
+  * HBase
+  * SQL
+  * Redshift
+  * Teradata
+* Presto is even faster than Hive
+* Presto can be launched with EMR in minutes
+* Processing is done in-memory
+* Not appropriate choice for OLTP or batch processing
+* Presto is suited for OLAP queries
+
+### Apache Zeppelin on EMR
+* If you're familiar with iPython notebooks - it's like that
+  * It's a web-browser interace that let's you write code and shows it
+    interactively
+  * Lets you interactively run scripts / code agains your data
+  * Can interleave with nicely formatted notes
+  * Can share notebooks with others on your cluster
+* Spark, Pythong, JDC, HBase, Elasticsearch + more
+
+#### Zeppelin + Spark
+* Can run Spark code interactively (like oyu can in the Spark shell)
+  * This speeds up your development cycle
+  * And allows easy experimentation and exploration of your big data
+* Can execute SQL queries directly agains SparkSQL
+* Query results may be visualized in charts and graphs
+  * You can visualize the data immediately and see what you're getting
+* Makes Spark feel more like a data science tool
+* In the world of data science people use iPhyton notebooks
+
+#### EMR Notebook
+* Similar concepts like Zeppelin, with more AWS integration (PySpark)
+* Notebooks backed up to S3
+* Provison clusters from the notebook!
+* Hostend inside a VPC
+* Accesses only via AWS console
+
+### Hue on EMR
+* Hadoop User Experience
+* Graphical front-end for application on your EMR cluster (like a manager for
+  your entire cluster)
+* Operation insights on the cluster
+* Front-end management console for your entire EMR cluster
+* IAM integration: Hue Super-users inherit IAM roles
+* S3: Can browse & move data between HDFS and S3
+
+
+### Splunk
+* Splunk / Hunk "makes machine data accessbile, usable, and valuable to
+  everyone"
+* Operational tool - can be used to visualize EMR and S3 data using your EMR
+  Hadoop cluster.
+
+### Flume
+* Another way of streaming your data into your cluster
+  * Something like Kinesis or Kafka may do
+* Made from the start with Hadoop in mind
+  * Built-in sinks (HDFS sink) for HDFS and HBase
+* Originally made to handle log aggregation
+* A way of streaming of log data from external sources into your EMR cluster
+
+### MXNet
+* Like Tensorflow, a library for building and accelerating neural networks
+* Included on EMR
+* Is a framwork to write deeplearning operations that are distributed across the
+  entire EMR cluster
+
+### S3DistCP
+* Tool for copying large amount of data
+  * From S3 into HDFS
+  * From HDFS into S3
+* Uses MapReduce to copy in a distribued manner
+  * Able to split up the copying of the object across all the machines in your
+    cluster
+* Suitable for parallel copying of large numbers of objects
+  * Across buckets, across accounts
+
+### Other EMR / Hadoop Tools
+* Ganglie (monitoring)
+* Mahout (machine learning)
+* Accumulo (another NoSQL database)
+* Sqoop (relational database connector) - import data from other data sources
+  into your cluster - parallelize the importing of data between external and
+  your cluster
+* HCatalog (table and storage management for Hive metastore)
+* Kinesis Connector (directly access Kinesis streams in your scripts)
+* Tachyon (accelerator for Spark)
+* Derby (open source relational DB in Java)
+* Ranger (data security manager for Hadoop)
+* Install whetever you want
+
+
+### EMR Security
+* IAM policies
+  * Can grant and deny permissions or what other EMR service your EMR cluster
+    can talk to
+  * IAM EMRFS request to S3
+* Kerberos
+  * Is another way to provide authentication through secret key cryptography
+  * Network authentication protocol that ensures that passwords are sent
+    securely over the network
+* SSH
+  * Secure way to connect to a command line on the cluster
+  * AWS Key pairs or Kerberos can be used to connect to SSH
+* IAM roles
+  * Each cluster has to have a service role and ec2 role
+
+### EMR: Choosing Instance Types
+* Master node:
+  * m4.large if < 50 nodes, m4.xlarge if > 50 nodes
+* Core & task nodes:
+  * m4.large is usually good
+  * If cluster waits a lot on external dependecies (i.e. web crawler), t2.medium
+  * Improved performance. m4.xlarge
+  * Computation-intesive applications: high CPU instances
+  * Database, memory-caching applications: high memory instances
+  * Network / CPU-intensive (NLP, ML) - cluster compuer instances
+* Spot instances:
+  * Good choice for task nodes
+  * Only use on core & master if you're testing or very cost-sensitive; you#re
+    risking partial data loss
