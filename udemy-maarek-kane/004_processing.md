@@ -148,15 +148,14 @@
 * If you need to ETL your data while you're streaming it in, it's better idea to
   perform your ETL using Kinesis store the data in S3 or Redshift and trigger
   Glue to continue transforming it.
-* Multiple ETL enginges. Glue ETL is implemented in Spark. When you want to use
-  other enginges such as Hive, Pig. So data pipeline or EMR might be a better
+* Multiple ETL engines. Glue ETL is implemented in Spark. When you want to use
+  other engines such as Hive, Pig. So data pipeline or EMR might be a better
   choice for doing that ETL then glue ETL.
 * Glue doesn't support NoSQL databases such as DynamoDB. And it wouldn't make
   sense anyway, because NoSQL databases don't require rigid schema. That's the
   whole point of Glue it provides schema for unstructured data for databased or
   analysis tools that require some sort of structure at data that they are
   looking at.
-
 * Glue can integrate with most SQL databases, regardless of whether they are AWS services.
 * You want to load data from a MySQL server installed in an EC2 t2.micro
   instance to be processed by AWS Glue. What applies the best here? A: Instance
@@ -240,7 +239,7 @@
       * HDFS is ephemeral. When you terminate your cluster the data is gone.
         However it's useful for caching intermediate result of processing or for
         workloads that have significant random IO. If you are going to run your
-        cluster without a shutting down, it's now a problem. But if you want to
+        cluster without a shutting down, it's not a problem. But if you want to
         do some cost optimization and need to shutdown your cluster, you should
           be look for durable storage. See EMRFS (EMR file system)
   System). 
@@ -262,7 +261,7 @@
   * Local file System: locally conntected disks. Useful for storing temp data,
     buffers, scratch data, data that changes often.
   * EBS for HDFS: EMR automatically attaches EBS 10gb volume as the root device
-    to enhance your performance. You can additional EBS. You can also save costs
+    to enhance your performance. You can also save costs
     to reduce EBS if you don't needed. EMR will delete this values once the
     cluster is shutdown.
       * You cannot attach EBS to a running cluster. You can only attach EBS when
@@ -312,7 +311,7 @@
   write code in order to use Spark. However there are lot of libraries you can
   use.
     * Use cases:
-      * Streaming: can be used with Apache Streaming, allows you to process data
+      * Streaming: can be used with Apache Spark Streaming, allows you to process data
         collected from Amazon Kinesis but also things outside of AWS system such
         as Apache Kafka or any other data stream.
       * Streaming Analytics: in a fault tolerant-way and you can write those
@@ -333,10 +332,10 @@
 
 * Spark processes are spread through entire cluster. The driver of the whole
   thing is called Spark Context. It is within your main program, the main
-  program is calles as a driver program or driver script. That's the actual code
+  program is called as a driver program or driver script. That's the actual code
   of your program/script that tells the Spark cluster what you want to do with
   your data.
-* Spark context will connect the different cluster managemers that will take
+* Spark context will connect the different cluster managers that will take
   care of allocating all the resources that your driver script needs across
   different applications. In a case of EMR, it's going to be using Apache YARN.
   Because that's a component of Hadoop installed on a cluster. However you can
@@ -344,7 +343,7 @@
   manager that you can deploy. So you can have a cluster that just runs Spark
   and nothing else. Once the cluster manager has decided how to distribute that
   work. Spark will require Executors.
-* Executors on nodes of the cluster. Executors are processes that run
+* Executors are nodes of the cluster. Executors are processes that run
   computations and store the data for your applications. The application code is
   then sent to each executor. And in the final step the Spark Context sends the
   taks to the Executors to run.
@@ -471,7 +470,7 @@ OVERWRITE INTO TABLE ratings;
   * AWS Glue Data Catalog
   * Amazon RDS
 * You can store that metastore in alternative places
-  * Hive metastore sounds like a lot a Glue Data catalogue. They server the same
+  * Hive metastore sounds like a lot a Glue Data catalogue. They serve the same
     functions. They basically maintaining structure information on unstructured
     data. How do I map that unstructured data to table columns and names and
     data types that will allow me to treat that data as straight up SQL table.
@@ -482,7 +481,7 @@ OVERWRITE INTO TABLE ratings;
   Catalog to impart structure on it.
 * This allows you to centralize metadata in one place not just for Hive or for
   everything else that required metadata in the AWS ecosystem.
-* It's alow possible to store your Hive metastore on external Amazon RDS system
+* It's allow possiblities to store your Hive metastore on external Amazon RDS system
   e.g. Amazon Aurora. So instead of storing you Hive metastore in the MySql
   database in the master node, you can choose to store that in external RDS, it
   will be persistent.
@@ -592,7 +591,7 @@ OVERWRITE INTO TABLE ratings;
   * Lets you interactively run scripts / code agains your data
   * Can interleave with nicely formatted notes
   * Can share notebooks with others on your cluster
-* Spark, Pythong, JDC, HBase, Elasticsearch + more
+* Spark, Python, JDC, HBase, Elasticsearch + more
 
 #### Zeppelin + Spark
 * Can run Spark code interactively (like oyu can in the Spark shell)
@@ -693,5 +692,5 @@ OVERWRITE INTO TABLE ratings;
   * Network / CPU-intensive (NLP, ML) - cluster compuer instances
 * Spot instances:
   * Good choice for task nodes
-  * Only use on core & master if you're testing or very cost-sensitive; you#re
+  * Only use on core & master if you're testing or very cost-sensitive; you're
     risking partial data loss
