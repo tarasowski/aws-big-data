@@ -224,6 +224,7 @@
     Data Pipeline
 
 #### EMR Storage
+* If you don't want the data on your cluster to be ephemeral, be sure to store or copy it in S3.
 * Normally Hadoop cluster only uses (HDFS), but on EMR you have many choices:
   * HDFS: 
       * Distributes your data to store across different data clusters. It allows
@@ -506,6 +507,7 @@ OVERWRITE INTO TABLE ratings;
   * Using Hive on EMR you can perform join operations between tables
 
 #### Apache Pig on EMR
+* Not TRUE: Pig supports access through JDBC
 * Pig as well as Hive are pre-installed on EMR
 * Pig is an alternative interface to MapReduce
 * Writing mappers and reducers by hand takes a long time.
@@ -604,6 +606,7 @@ OVERWRITE INTO TABLE ratings;
 * In the world of data science people use iPhyton notebooks
 
 #### EMR Notebook
+* To create or open a notebook and run queries on your EMR cluster you need to log into the AWS Management Console.
 * Similar concepts like Zeppelin, with more AWS integration (PySpark)
 * Notebooks backed up to S3
 * Provison clusters from the notebook!
@@ -694,3 +697,294 @@ OVERWRITE INTO TABLE ratings;
   * Good choice for task nodes
   * Only use on core & master if you're testing or very cost-sensitive; you're
     risking partial data loss
+
+### Amazon Machine Learning
+* ML with linear and logistic regression
+
+#### Machine Learning 101
+* Machine learning systems prdict some unknown property of an item, given its
+  other proprties.
+* Examples:
+  * How much will thi shouse sell for?
+    * You can predict the sale price of your house given historical data of
+      houses that are similar to yours
+    * If I have a database for historic house sales for a given zip code, maybe
+      I can look for correlations between the number of bedrooms and square
+      footage and compare actually to a knows sale price. I can use a model to
+      predict the sale price of my house giving it's attributes such as square
+      footage, number of bedroom and zip code.
+  * What is this a picture of?
+  * Is this biopsy result malignant?
+  * is this financial transaction fraudulent? 
+    * Based on historical data you can make a prediction if a new transaction is
+      fraudulent
+* The algorithms can be complex if you have massive amount of data
+
+#### Supervised Learning
+* Supervised machine learning systems are trained:
+  * Using historical data to be trained
+  * The property we want to predict is called a label e.g. what is the sales
+    price of this house, e.g. what is in this picture
+  * Our **training data set** contains labels known to be correct, together with the
+    other attributes of the data (i.e. known house sale price given its
+    location, # of bedrooms, square feet, etc.). Important training data set
+    knowns the labels of the e.g. houses, those labels are house prices.
+  * This training data is used to **build a model** that can then make predictions
+    of unkown labels. 
+
+#### Train / Test Evaluation
+* Your training data can be randomly split into a **training set** and a **test set**
+* Only the training set is used to train the model
+* The model is then used on the test set
+* We can then measure the **accuracy** of the predicted labels vs. their actual
+  labels. You can measure it with a metrics RMSE (Root Mean Square Error)
+
+#### Types of models in Amazon ML
+* Regression: What price will this house sell for?
+  * We are trying to predict some numerical value based on past trends.
+  * We are trying to predict a specific number
+* Multiclass Classification: What is this a picture of?
+  * We are trying to classify something into one of many different buckets
+  * E.g. types of animals
+* Binary Classification: Is this biopsy result malignant?
+  * Here you are not trying to predict numbers or many types
+  * Here you are trying to predict two classes, like yes or no answer 
+  * Binary refer that you only have two choices to choose from yes or not
+* Binary Classification: Is this financial transaction fraudulent?
+
+* Under the hood it will using a lineral regression (predicting numbers) as the model regression
+  model types and logistic regression for classifiers (prediction categories).
+
+#### Confusion Matrix
+* A way to visualze the accuracy of multiclass classification predictive models
+
+![confusion matrix](https://scikit-learn.org/stable/_images/sphx_glr_plot_confusion_matrix_001.png)
+
+#### Hyperparameters
+* Machine learning models often depend on tuning the parameters of the model
+  itself
+    * This is called hyperparameter tuning
+* Parameters in Amazon ML include:
+  * Learning rate
+  * Model size
+  * Number of passes
+  * Data shuffling
+  * Regularization
+
+#### Amazon Machine Learning (ML)
+* Provides visualizeation tools & wizards to make creating a model easy
+* You point it to training data in S3, Redfshift or RDS
+* It builds a model that can make predictions using batches or a low-latency API
+  (you can call from other applications, use it like a service to get real-time
+  predictions)
+* Can do train/test and evaluate your model
+* Fully managed
+* A bit outdated now!!!
+* Machine Learning is not Deep Learning. Deep Learning is the thing that
+  everybody does these days.
+
+#### Ideal Usage Patterns for Amazon Machine Learning
+* Flag suspicious transactions (fraud detection)
+  * Binary classification problem
+* Forecasting product demand
+  * Regression problems, we are trying to predict a number
+* Personalization - predict items a user will be interested in
+* Predict user activity 
+* Classify social media (does this Tweet require my attention?)
+
+#### Amazon ML: Cost Model
+* Pay for what you use
+* Charged for compute time
+* Number of predictions
+* Memory used to run your model
+* Compute-hours for training
+
+#### Amazon ML: Promises & Limitations
+* No downtime
+* Up to 100GB training data (more via support ticket)
+* Up to 5 simultaneous jobs (more via support ticket)
+
+#### Amazon ML: Anti-Patterns
+* Terabyte-scale data (not Amazon ML for that but maybe EMR running Apache
+  Spark)
+* Unsupported learning tasks
+  * Sequence prediction
+  * Unsupervised clustering
+  * Deep learning
+* EMR / Spark is an (unmanaged) alternative
+
+
+### Amazon SageMaker
+* Scalable, fully-managed machine learning
+* Allows you to create notebooks hosted on AWS that can train large scale models
+  in the cloud and make predictions from the cloud
+* Scales better, has more flexibility and more power than Amazon ML
+* You need to write python code in Jypyter notebook in order to use SageMaker
+* It's still managed
+
+#### SageMaker modules
+* Appropriate for Deep Learning and not limited to 100GB Amazon ML Service
+* Build -> Train -> Deploy
+* Build module provides hosted environment for working with your data,
+  experimenting with algorithms, visualising your output. These is where you're
+  going to run fully managed systems including Jypyter notebooks for training
+  data exploration and pre-processing. Also has built-in reinformcement learning
+  algorithms, offers broad framework support. You can download docker and
+  develop it locally and test them using SageMaker SDK.
+* Train module allows one-click training at high scale at low cost. There is
+  also a SageMaker search which allows you quickly to find and evaluate most
+  relevant model training jobs. You might want to train your model in several
+  different way, using several different data-sets, several different
+  hyperparameters.
+* Deploy module provides a managed environment for easily host and test your
+  model that will make predictions securely and with low-latency. There is also
+  a batch mode.
+* SageMaker Neo allows you to push your predictions model out to edge nodes to
+  make them really really fast. If you need to get predictions back from the
+  model at very low latency.
+
+#### SageMaker is powerful
+* Tensorflow (is under the hood)
+* Apache MXNet
+* GPU accelerated deep learning
+* Scaling effectively unlimited
+* Hyperparameter tuning jobs (you don't have the jobs, it does the SageMaker)
+* It can make predictions in the same speed as your brain does!!!
+* It's an unlimited brain
+* SageMaker required a protobuf format (you need to serialize the data into
+  protobuf)
+* Has no fixed limit to the size of the dataset that you can use for training
+  model with Amazon SageMaker
+
+#### SageMaker Security
+* Code stored in ML storage volumes:
+  * Controlled by security groups
+  * Optionally encrypted at rest
+* All artifacts encrypted in transit and at rest
+* API & console secured by SSL
+* IAM roles
+* Encryped S3 buckets for data
+* KMS integration for SageMaker notebooks, training jobs, endpoints
+* Integrates with CloudWatch and CloudTrail (records the history of API
+  SageMaker calls)
+
+#### Machine Learning ML Service (Example notes)
+* You need to import a schema first
+* UnitPrice is numeric
+* InvoiceNr is categorical
+* Quantity is numeric and a traget in the example. What we are trying to
+  predict!!!
+* If you need to choose between many classification problems, it's called
+  multiple classification problems. And if you choose between yes / no it's
+  called binary classifivation problem.
+* If we try to predict a number that has meaning in its order you use numerical
+  regression
+* You need to identify and clean your data from the outliers, before you are
+  trying to apply a Machine Learning.
+
+### Deep Learning 101
+* Based on understaing on how our brain works. Deep Learning is reverse
+  engineering of our brain. We want to try that the machines can think as our
+  brain.
+* At the exam you will be expected to recognize the basic types of neural
+  networks and how to set these up at AWS.
+* Neurons in your cerebral cortex are connected via axons
+* A neuron "fires" to the neurons it's connected to, when enogh of its input
+  signals are activated.
+* Very simple at the individual neruon level - but layers of neurons connected
+  in this way can yield learning behavior.
+* Billions of neurons, each with thousands of connections, yields a mind
+* In our brain we have billions of neuron that have 1000snd of connections.
+  Individually they behave simply, but when you connect them they create complex
+  thoughts
+* Neurons in your cortex seem to be arranged into many stacks, or "columns" that
+  process information in **parallel**
+* "mini-columns" of around 100 neurons are organized into larger
+  "hyper-columns". There are 100 million mini-columns in your cortex
+* This is coincidentally similar to how GPU's (3D video card) work
+* It's called Deep Learning because there are more than one layer of neurons.
+  Basically there are stacked layers of neurons connected in different ways and
+  those ways between each neuron form the basis of your neural network.
+
+#### Deep Learning Framework
+* GPU can parallelize the processing of lots neurons
+* You can have many single GPU nodes in a cluser
+* You can have many nodes in a cluser
+* Tensorflow / Keras - Can be parallelized across the cluster
+* MXNet
+
+#### Types of Neural Networks
+* Feedforward Neural Network
+  * Simple network feed in attributes at the bottom and classifications pop-up
+    at the top
+* Convolutional Neural Networks (CNN)
+  * Purpose built to process image data
+  * Image classification (is there a stop sign in this image?)
+* Recurrent Neural Network (RNNs)
+  * Deals with sequences in time (predict stock prices, understand words in a
+    sentence, etc.)
+  * LSTM (long short term memory cell), GRU (gated recorded unit cell) ->
+    Remember LSTM & GRU is a RNNs
+
+#### Deep Learning on EC2 / EMR
+* EMR supports Apache MXNet and GPU instance types
+  * Highly optimized for Deep Learning
+  * If you need to do deep learning you need a lot of GPU power
+* Appropriate instance types for deep learning:
+  * P3: 8 Tesla V100 GPU's
+  * P2: 16 K80 GPU's
+  * G3: 4 M60 GPU's (all Nvidia chips)
+* Deep Learning AMI's (Amazon Machine Images if you want to build your own
+  cluster without EMR)
+
+### AWS Data Pipeline
+* Let's you schedule tasks for processing big data
+* Example:
+  * We have log files published on EC2 instances
+  * Those log files are published into S3
+  * Later analyze them using EMR (some process running on a EMR cluster, maybe
+    Spark)
+  * Data Pipeline can schedule a task to copy those log files from EC2 into S3
+    on a daily basis and than maybe start a task on the weekly task basis to analyse that data on EMR
+* An alternative in Hadoop it's called Uzi
+* Data Pipeline is basically a task scheduling framework that can run different
+  operations that depend on each other on different schedules.
+* It's a web service that helps you reliably process and move data between
+  different AWS compute and storage services at specified intervals
+
+![data
+pipeline](https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/images/dp-how-dp-works-v2.png)
+
+#### Data Pipeline Features
+* Destinations include S3, RDS, DynamoDB, Redshift and EMR
+* Manages task dependencies
+* Retries and notifies on failures
+* Cross-region pipelines
+* Precondition checks (make sure the data is really ready)
+  * DynamoDB data exist, checks if data is inside the DynamoDB table
+  * DynamoDB table exists
+  * S3 key exists
+  * S3 prefix exists
+  * Shell command precondition -> to check if the script succeeds
+* Data sources may be on-premises
+  * You install a task runner on your on-premise machines similar to Kinesis
+    agent
+* Highly available
+  * You can apply multiple task runners
+* It's used to chain things together and doing so on a reliable manner
+
+#### Data Pipeline Activities (= Actions)
+* Actions that Data Pipeline initiates for your behalf:
+* By default it will retry 3 times before it fails
+* After an activity fails, it will trigger an Alarm and will no re-run again,
+  until we manually fix it.
+  * EMR
+    * To run different EMR jobs. Start, run jobs, and terminate
+  * Hive
+    * Hive queries on a schedule
+  * Copy
+    * Automatically copy the data
+  * SQL
+    * Run SQL queries
+  * Scripts
+    * Arbitrary linux shell commands or programs as your data pipeline
