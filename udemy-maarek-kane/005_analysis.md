@@ -224,3 +224,17 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
 * Ad-hoc data querying
   * Athena is better
 * Remember Amazon ES is primarily for search and analytics
+
+#### Notes on AWS ES
+* Database is called domain in Elasticsearch
+* Node-to-node encryption: This setting provides an additional layer of security. Each Amazon ES domain operates within a secure, dedicated VPC. Node-to-node encryption enables TLS encryption for all communications within that VPC. (In flight)
+* Data at rest encryption: Encryption at rest secures the indices and automated snapshots associated with the domain.
+* Index rotation: Select how often to rotate the Elasticsearch index. Firehose appends a corresponding timestamp to the index and rotates it.
+
+* As recommended by AWS, you are going to ensure you have dedicated master nodes
+  for high performance. As a user, what can you configure for the master nodes?
+    The count and instance types of the master nodes
+* Which are supported ways to import data into your Amazon ES domain? Kinesis, DynamoDB, Logstash / Beats, and Elasticsearch's native API's offer means to import data into Amazon ES.
+
+
+
