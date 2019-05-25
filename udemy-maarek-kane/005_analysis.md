@@ -237,4 +237,8 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
 * Which are supported ways to import data into your Amazon ES domain? Kinesis, DynamoDB, Logstash / Beats, and Elasticsearch's native API's offer means to import data into Amazon ES.
 
 
+#### MyArchitecture:
+* [How Appnext does big data
+  analytics](https://www.youtube.com/watch?v=wEOm6aiN4ww)
+* Kinesis Firehose ---> JSON S3 ---> EMR ---> Parquet ---> Athena / Spectrum
 
