@@ -145,3 +145,82 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
 ![shards](./img/es-shards.png)
 
 ![shards](https://cdn-images-1.medium.com/max/1600/1*u6kVsD_Yl3DY43IJAixDqw.png)
+
+#### Amazon Elasticsearch Service
+* Fully-managed (but not serverless)
+  * You need to think about how many servers do you need (nodes)
+* Scale up or down without downtime
+  * But this isn't automatic
+* Pay for what you use
+  * Intance-hours, storage, data transfer
+* Network isolation
+  * With Amazon VPC
+  * Encrypt your data at rest and in transit
+* AWS integration
+  * S3 buckets (via Lambda to Kinesis)
+    * Use Lambda as Glue between S3 and pipe the data to Kinesis
+  * Kinesis Data Streams
+  * DynamoDB Streams
+  * CloudWatch / CloudTrail
+  * Integrates with IoT services of AWS
+  * Zone awareness
+    * You can allocate ES nodes across two different availability zones in the
+      same region, by doing that you can increase your availability of each
+      service but it can increase latency
+
+#### Amazon ES options
+* How many dedicated master node(s)
+  * How many of them and what instance type 
+* Domains
+  * AWS service domain is a collection of all the resources needed to run an ES
+    cluster. It contains all the configuration for the cluster as a whole. So
+    basically a cluster in Amazon ES is a domain
+* Snapshots to S3
+  * For data backup processes. If you accidentally shutdown your cluster you
+    will keep the data
+* Zone Awareness
+  * Increased availability on the price of higher latency
+
+#### Amazon ES Security
+* Resource-based policies
+  * You can attach those to the service domain. That determines what actions
+    principals can take on Elastic Search API's. Where principals are users, an
+    account or a role that can be granted access.
+* Identity-based policies
+  * Using AIM policies
+* IP-based policies
+  * To tight specific actions to specific IP ranges
+* Request signing
+  * Sign your request. When you send a request from AWS SDK's to ES. You need
+    digitally sign all the request are going in. So they're basically secure the
+    traffic in flight. 
+* VPC
+  * You can put a cluster into a VPC instead of making it public. VPC is not
+    accessible from the outside world. But it makes it hard to connect to your
+    cluster and use tools like Kibana
+  * You have to decide upfront if your cluster is going to live in the VPC or be
+    publically accessible. You can't change that later.
+* Cognito
+  * It integrates with Cognito and primarily it used in the context with Kibana.
+
+#### Securing Kibana
+* If you host your cluster inside a VPC, how to you access Kibana. You have to
+  access Kibana through a web interface.
+* Cognito - The simplest way to do it using Cognito. It allows users to log into
+  Kibana though an enterprise identity provider such as microsoft active
+  directory using Saml 2.0 or Google, Amazon, Facebook. Cognito allows you to
+  access the cluster via Kibana even if it's inside a VPC. 
+* Getting inside a VPC from outside is hard...
+  * Some ways around it
+    * Nginx reverse procy on EC2 forwarding to ES domain
+    * SSH tunnel for port 5601 (which is what Kibana listens on)
+    * VPC Direct connect
+    * VPN
+
+#### Amazon ES anti-patterns
+* OLTP
+  * No transactions
+  * RDS or DynamoDB is better
+* Ad-hoc data querying
+  * Athena is better
+* Remember Amazon ES is primarily for search and analytics
