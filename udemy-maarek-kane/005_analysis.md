@@ -241,4 +241,5 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
 * [How Appnext does big data
   analytics](https://www.youtube.com/watch?v=wEOm6aiN4ww)
 * Kinesis Firehose ---> JSON S3 ---> EMR ---> Parquet ---> Athena / Spectrum
+* [ ] Analyse other Architectures: https://www.youtube.com/watch?v=mxKhbU_ToMs&list=PLhr1KZpdzukdeX8mQ2qO73bg6UKQHYsHb
 
