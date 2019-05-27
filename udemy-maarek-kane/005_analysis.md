@@ -243,3 +243,195 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
 * Kinesis Firehose ---> JSON S3 ---> EMR ---> Parquet ---> Athena / Spectrum
 * [ ] Analyse other Architectures: https://www.youtube.com/watch?v=mxKhbU_ToMs&list=PLhr1KZpdzukdeX8mQ2qO73bg6UKQHYsHb
 
+
+#### Amazon Athena
+* SQL interface for S3
+* Serverless interactive queries of S3 data
+* Interactive query service for S3 (SQL)
+  * No need to load data, it stays in S3
+* Presto under the hood
+  * Highly customized and preconfigured ec2 instance for you
+* Serverless
+* Supports many data formats (depending on the application, you need to choose
+  the right format -
+  [Benchmarks](https://www.slideshare.net/oom65/file-format-benchmarks-avro-json-orc-parquet))
+  * CSV (human readable) - comma separated also TSV tab separated list
+  * JSON (human readable) - bit more structure and hiarchy
+  * If you do want to do things at scale, you need something which is more
+      efficient. You should looking for non-human readable. Instead of
+      organizing data by rows, it's organizing it by each column. So if you have
+      an application that does query your data based on specific columns. They
+      are also spittable, the files can be split and distributed across the
+      entire cluster. 
+      * ORC (columnar, splittable)
+      * Parquet (columnar, splittable)
+      * Avro (spittable, no columnar, not-human readable) - more for a row based storage
+* Unstructured, semi-sctructured, or structured
+  * Doesn't really care how the data is structured in S3 it can work with a Glue
+    & Glue Data Catalog and impart structure on that data. 
+
+[Columnar](https://mariadb.com/files/inline-images/columnstore-row-vs-column-orientated_0.png)
+
+#### Some examples
+* Ad-hoc queries of web logs
+* Querying staging data before loading to Redshift
+* Analyze CloudTraiil / CloudFront / VPC / ELB etc. logs in S3
+* Integration with Jupyter, Zeppelin, RStudie notebooks
+* Integration with QuickSight
+* Integration via ODBC / JDBC with other visualization tools
+  * An ODBC driver uses the Open Database Connectivity (ODBC) interface by Microsoft that allows applications to access data in database management systems (DBMS) using SQL as a standard for accessing the data. ... ODBC permits maximum interoperability, which means a single application can access different DBMS.
+
+
+#### Athena + Glue
+* Amazon S3 ----> AWS Glue ---> Amazon Athena ---> Amazon QuickSight
+* Glue imparts structure on unstructured data in S3 that Athena can query it as
+  a database. 
+  * Glue crawler populating the Glue Data Catalog for your S3 data. That's
+    looking at what's stored in S3 and trying to extract columns and table
+    definitioins out for you. 
+  * Once you have Glue Data Catalog with your published data. Athena will see it
+    automatically and can build a table from there automatically. Anytime Athena
+    sees something in you Data Catalog in your account. It's going to make a
+    table for you, so you can query just you would any other SQL database. 
+  * Data catalog allows other analytics tools to visualize and anlyse that data
+    as well. E.g. RDS, Redshift, Redshift Spectrum, EMR, any application
+    compatibable with Apache Metastore. Glue catalog can be used as a Hive
+    metastore too.
+* Athena integrated with Glue's Data Catalog that allows you to create unified
+  metadata repository across various services, crawl data to discover schemas,
+  populate your catalog with a new and modified table partition definitions and
+  maintain schema versioning all under the hood and Athena just sits on top of
+  that and provides SQL interface to that underlying Glue structure.
+
+#### Athena cost model
+* Pay-as-you-go
+  * $5 per TB scanned
+  * Successful or cancelled queries (charged for), failed queries (are
+    free).
+  * No charge for DDL (Create, Alter, Drop etc)
+* Save LOTS of money by unsing columnar formats
+  * Better performance for applications that querying a small number of columns
+    use:
+    * ORC, Parquet
+    * Save 30-90% and get better performance
+    * It allows Athena only to select the required column and process your data.
+      You are reducing the amount of data that you need to scan with Athena. By
+      reducing that scanning you win.
+    * Partition your data can reduce your costs as well. If you have your data
+      partitioned such as by date, hour etc. queries that are restricted to that
+      given partition will also scan less data as well. 
+* Glue and S3 have thir own charges. Athena justs sits on top of Glue, just to
+  get the table definition of your data and the data is stored in S3.
+
+#### Athen Security
+* Access control
+  * IAM, ACLs, S3 bucket policies
+  * AmazonAthenaFullAccess / AWSQuicksightAthenaAccess
+* Encrypt results at rest in S3 staging directory
+  * Server-side encryption with S3-managed key (SSE-S3)
+  * Server-side encryption with KMS key (SSE-KMS)
+  * Client-side encryption with KMS key (CSE-KMS)
+* Cross-account access in S3 bucket policy possible
+  * It's possible for Athena to access a data lake from another acccount
+* Transport Layer Security (TLS) encrypts in-transit (between Athena and S3)
+
+#### Athena anti-patterns
+* Highly formatted reports / visualization
+  * That's what QuickSight is for
+  * Nice stuff with graphs and visualization
+* ETL
+  * Use Glue instead
+  * Or with Apache Spark
+
+#### Athena Example
+* Glue can be run on demand or frequently: daily, hourly, monthly etc.
+* Glue sees partitions. Our data was broken up into year subdirectory, month
+  subdirectory, a day subdirectory, and hour subdirectory. These is what the
+  partitions are in the crawler view (the prefixes of the files). It's a
+  subdirectory structure that our S3 data lives with in. We can take advantage
+  of those partitions to speed up our queries.
+* If you want to transform a data type recognized by Glue into something else
+  e.g. InvoiceDate from String to Date. The best way to do that is to write an
+  ETL jobs to do this conversion for you.
+* A table in Glue give some structure to a collection of CSV files that are
+  sitting in S3. We can start treat the S3 datalake as a database.
+
+![glue table](./img/glue-table.png)
+
+![Athena](./img/athena.png)
+
+### Redshift 
+* Fully-managed, petabyte-scale distributed data warehouse. Spread across an
+  entire cluster.
+
+#### What is Redshift
+* Fully-managed, petabyte scale data warehouse service
+* 10x better performance than other DW's
+  * Via machine larning, massivley parallel query execution, columnar storage
+* Designed for OLAP, not OLTP
+  * OLAP - online analytical processing
+  * OLTP - more row based storage (massive transaction rates to expect fast
+    responses)
+* Cost effective
+  * Super cheap, the most effective data warehouse. No upfront costs.
+* SQL, ODBC, JDBC interfaces
+  * SQL based clients or BI tools (ODBS, JDBC)
+  * Connect analytical / visualization tool
+* Scale up or down on demand
+* Built-in replication & backups
+* Monitoring via CloudWatch / CloudTrail
+  * You can see which user queries consuming much resources and optimize based
+    on that data.
+
+#### Redshift Use-Cases
+* Accelerate analytics workloads
+  * If you just want to have your DW faster, move to Redshift
+* Unified data warehouse & data lake
+  * Spectrum is a way to import unstructured data into Redshift as a table  
+* Data warehose modernization
+* Analyze global sales data
+* Store historical stock trade data
+* Analyse ad impressions & clicks
+* Aggregate gaming data
+* Analyze social trends
+
+#### Redshift Architecture
+* We have clusters:
+  * A cluter is a core infrastructure component of an AWS Redshift datawarehouse
+  * A cluster is composed of a leader node and one or more compute nodes
+  * It can contain between 1 and 120 compute nodes depending on the node type
+  * Each cluster can contain 1 or more databases
+  * The user data is going to be stored on the compute nodes.
+  * The leader node is just managing the communication between client programs
+    and the communication with the compute nodes. It's sort an interface between
+    you external clients to redshift and compute nodes under the hood. It
+    receives the queries from the clients, parses the queries and develops
+    execution plans which are an ordered steps to process those queries.It then
+    coordinates parallel execution of those plans with the compute nodes and
+    aggregates the intermediate results from the compute nodes. Finally the
+    leader node will turn those results back to the client application.
+  * Compute nodes are responsible to execute the steps specified in the
+    execution plan that it's getting for the leader node and transmitting data
+    among themselves to server those queries. It then sends those intermediate
+    results back to the leader node for aggregation before sent back to the
+    client application. Each compute node has its own cpu, memory and attached
+    disk storage, which are determent by the node type you choose. There are two
+    different types:
+      * DS (dense storage) type: allows you to create very large datawarehouse
+        using hard disk drives (hdd) for a very low price points. These are
+      * DC (dense compute) type: allows you to create fast performing node types
+        with lots of CPU, large amounts of RAM, and SSD (solid state disks).
+      * Compute nodes can be aither DS or DC if you want to optimize for
+        computing or storage capacity. 
+    * Every compute node is divided into slices. And a portion of the memory in
+      the space is going to be allocated to each slice. Where processes a
+      portion of a work Slices process a chunk of a data given to it.load assigned to that node. The number of slices per node
+      is determined by the node size of the cluster. Slices process a chunk of a
+      data given to it.
+![storage](https://panoply.io/uploads/versions/media-20170927-4---x----713-354x---.png)
+
+![redshift](https://hevodata.com/blog/wp-content/uploads/2017/10/Screen-Shot-2017-10-11-at-3.14.59-PM.png)
+
+
+
+
