@@ -717,3 +717,53 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
   * ETL first with EMR etc.
 * BLOB (binary large object) data
   * Store references to large binary files in S3, not the files themselves
+
+#### Security on a Redshift Cluster
+* KMS
+* HMS - security on Redshift if you have hardware security possibilities
+
+#### Other
+* If you want to query S3 data from S3 with Spectrum you need to use Glue Data
+  Catalog for this reason. 
+
+#### Amazon RDS
+* For small data not for big data
+* Hosted relational database
+  * Amazon Aurora
+  * MySQL
+  * PostgreSQL
+  * MariaDB (open source version of MySQL)
+  * Oracle
+  * SQL Server
+* Not for "big data"
+  * Might appear on exam as an example of what not to use
+  * Or in the context of migrating from RDS to Redshift etc.
+
+#### ACID
+* RDS databses offer full ACID complience
+  * Atomicity: ensures that the transaction as a whole is successfully executed,
+    or if a part of a transaction fails it makes sure that the whole transaction
+    is invalidated.
+  * Consistency: ensures that the data written to db as part of the transaction
+    must adhere to all defined rules, restrictions including constrains,
+    cascades and triggers
+  * Isolation: ensures that each transaction is independent to itself, critical
+    in achieving concurrency control
+  * Durability: ensures that all of the changes made to the database are
+    preminent once the transaction is successfully completed
+
+#### Amazon Aurora
+* MySQL and PostgreSQL compatible
+* up to 5x faster then MySQL, 3X faster than ProstgreSQL
+* 1/10 the cost of commercial databases
+* Up to 64TB per database instance
+* Up to 15 read replicas
+* Continuous backup to S3
+* Replication across availability zones
+* Automatic scaling with Aurora Serverless
+
+#### Aurora Security
+* VPC network isolation
+* At-rest with KMS
+  * Data, backup, snapshots, and replicas can be encrypted
+* In-transit with SSL 
