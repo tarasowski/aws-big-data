@@ -397,7 +397,7 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
 
 #### Redshift Architecture
 * We have clusters:
-  * A cluter is a core infrastructure component of an AWS Redshift datawarehouse
+  * A cluster is a core infrastructure component of an AWS Redshift datawarehouse
   * A cluster is composed of a leader node and one or more compute nodes
   * It can contain between 1 and 120 compute nodes depending on the node type
   * Each cluster can contain 1 or more databases
@@ -432,6 +432,288 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
 
 ![redshift](https://hevodata.com/blog/wp-content/uploads/2017/10/Screen-Shot-2017-10-11-at-3.14.59-PM.png)
 
+#### Redshift Spectrum
+* Query exabytes of unstructued data in S3 without loading (into a cluster) or transforming that
+  data
+* Limitless concurrency
+* Horizontal scaling
+* Separate storage & compute resources
+  * Allows you to separate and scale independently
+    * Storage is done in s3
+    * Spectrum is just doing the compute part to analyse that data
+* Wide variety of data formats
+  * Avro
+  * CSV
+  * Grok
+  * ION
+  * JSON
+  * ORC
+  * Parquet
+  * RC
+  * Regex
+  * Sequence files
+  * Text files
+  * TSV
+* Support of Gzip and Snappy compression
+  * To save space and bandwidth
+* AWS Glue Catalog does makes tables on top of your S3 data.
+* Instead of looking like a console based SQL engine like in Athena, it just
+  looks like another table in the databse
+* That way you can have tables that embody your S3 data lake, alongside with
+  tables that embody data that is stored on the Redshift cluster itself. You can
+  treat them as the same thing and join them or whatever you want to do.
+* Amazon Redshift Spectrum ---> AWS Glue Catalog ---> S3
+* Why is Redshift so fast?
+  * It uses massively parallel processing (MPP)
+    * Data and quering is distribitued across all nodes
+    * Does all your queries in parallel. If you need more speed, just add more
+      nodes to your cluster.
+  * Columnar Data Storage
+    * Ideas for large data set queriying
+    * Typically you just looking at specific column
+    * Requires far less IO
+    * Amazon automatically converts the data that enters the system into
+      Columnar Data Storage format.
+    * Not for OLTP only for OLAP
+    * Uses block size of 1 MB
+  * Column Compression
+    * Compared to row based data stores, columnar-based data stores can
+      generally be compressed much more, as it all sequentially stored on disk
+      at the same type of data format.
+    * Multiple compression techniques are often applied for better results. So
+      indexes or materialized views are not required for Redshift and uses less
+      space. It will automatically sample the data and select the most
+      appropriate compression scheme when the data is loaded into an empty
+      table.
+    * It reduces the size of the data when it is stored. And the size of data
+      when it's read from the storage. It reduces disk IO and therefore improves
+      your query performance.
+    * When you load your data into a Redshift cluster, usually you use a copy
+      command to do that most efficiently. It allows you to copy the data into
+      distributed parallelized manner. When you issue that copy command it will
+      automatically analyse and apply that compression automatically.
+    * It's not possible to change the compression encoding after the table is
+      created. CheckAnalysisCommand produces report about the compression.
 
+#### Redshift Durability
+* Replication within cluster
+* Backup to S3
+  * Asynchronously replicated to another region
+  * 3 copies of the data are maintained (data is stored on 3 places)
+    * On the original (within your cluster)
+    * On the replica of compute nodes (replica copy on your copy)
+    * On backup on S3  (async S3 backup)
+* Automated spanshots
+  * 1 day retention is by default
+  * You can increase to 35 days
+  * If you turn your retention period down to 0, automated backups will be
+    turned off
+* Failed drives / nodes automatically replaced
+  * If you need to restore one of your backups. You choose the backup you want
+    and AWS will provision a new data warehouse cluster and restore your data to
+    it. You can switch over to the newly restored cluster from the old one.
+  * In event of drive failure Redshift cluster will be available with a slight
+    performance hit in the quries. While Redshift rebuilds that drive from a
+    replica on that drive which is stored on another drive on that node. 
+  * Single node clusters do not support data replication because nothing is
+    replicated too. In that case you have to restore your cluster from a
+    snapshot in S3 instead.
+  * In event of node failure, the cluster will be unavailable for query and
+    updates utill it's fully restored. Mostly accessed data from S3 is loaded
+    frist.
+  * Single node cluster, don#t support data replication. You need to restore
+    that cluster from S3 in case of a node failure on a single node cluster.
+  * In production you should have at least two nodes in your cluster.
+* However - limitied to a single availablity zone (AZ)
+  * In case of AZ outtage, you will not able to access your cluster until power
+    and access is restored.
+  * You can restore a snapshot to a new availability zone within the same
+    region.
+  * Your mostly accessed data will be restored first from S3, so you can resume
+    your queries.
+  * Redshift support single AZ deployment. So when an entire zone goes down, you
+    would have to restore data from S3 to different AZ.
 
+#### Scaling Redshift
+* Vertical (increasing the node instance type) and horizontal (increasing the
+  number of nodes) scaling on demand
+* During scaling (requiest for changed applies immediately):
+  * A new cluster is created while your old one remains available for reads
+  * CNAME is flipped to new cluster ( a few minutes downtime)
+    * CNAME is a canonical name record or alias record. A type of resource
+      record in the domain name system (dns), that specifies that one domain
+      nameis an alieas of another canonical domain name.
+  * Data moved in parallel to new compute nodes
 
+#### Redshift Deistribution Styles
+* Data is distributed across compute nodes and slices on the compute nodes.
+* There are several ways of doing that distribution. When data is loaded into a
+  table, Redshift will distribute that data into compute nodes and slices
+  according to the distribution style that you chose, when you created the
+  table.
+* Two goals of data distirbution:
+  * To distribute the workload uniformely among the nodes in the cluster and to
+    minimise query execution. There 4 different distribution styles:
+* AUTO
+  * If you don't specify distirbution style. Amazon Redshift uses
+    auto-distribution and based on the size of the table data. Redshift will
+    assign an optimal distribution style for you and that might be:
+      * EVEN
+        * Regarding the data in the table, the leader node disributes that data
+          in a round-robin fashion. It's going to step through each individual
+          slice and keep assigning new data to each slice in a circular manner.
+        * This is appropriate when the table doesn't participate in joins or
+          when there is not a clear choice between a KEY distribution or ALL
+          distribution. Just spreads the data as even as possible w/o trying to
+          cluster data that might be accessible at the same time.
+        * Rows distributed across slices in round-robin
+      * KEY
+        * The rows are distributed acording the values in one column.
+        * Leader node will place matching values on the same node slice
+        * And matching values of the common columns are physically stored
+          together
+        * Use case: when you do query on specific columns on your data, by using
+          KEY distribution you can make sure that associated data with a
+          specific key value will be located on the same slice. Can speed up
+          your queries. Based on key hashes!
+        * Rows distributed based on one column
+      * ALL
+        * A copy of an entire table is distributed on every node.
+        * That ensures that every row is co-located for every join that a table
+          will participate in. 
+        * It multiplies the storage requirements by the number of nodes in the
+          cluster. It takes much longer to upload or insert data into multiple
+          tables. 
+        * Only appropriate for really slow moving tables. Tables that are not
+          updated frequently or extensively. 
+        * You can query the ssvinfoview it will show the current distribution
+          style for that table. 
+        * **Important:** it's not possible to change the style of the table
+          after it has been created. If you want to use a different distribution
+          style you have to recreate that table and populate the new table with
+          a deep copy.
+        * Entire table is copies to every node
+
+#### Redshift Sort Keys
+* Sort keys are similar to indexes like in RDS
+* In Redshift a column can be a sort key
+* Allows you to skip over entire of ranges of data very quickly
+* Rows are stored on disk in sorted order based on the column you designate as a
+  sort key
+* Like an index
+* Makes for fast range queries
+  * Min and max values will be stored as part of the metadata
+* Choosing a sort key
+  * Recency?: if recent data is quered frequently, you need to specify the
+    timestamp column as a leading column for the sort key. That will help to
+    skip the entire blocks that fall outside of time range. 
+  * Filtering?: If you do equality filtering on one column. Specify that column
+    as a sort key. Redshift can skip reading entire blocks of that data column,
+    because it tracks min/max values stored on each block and can skip blocks
+    that don't apply to that predicate range.
+  * Joins?: specify the join column as both the sort key and the disribution
+    key. That would a query optimizer to choose a sort/merge join instead of
+    lower hash join. 
+* Single vs. 
+  * Using a single key to sort the data. Useful when you consistently querying
+    the data within a single filter column. If you querying primarily by date
+    you might choose a single column sort key by date. 
+* Compound vs. 
+  * Is made of all the columns listed in the sort key defintion. In the order
+    they are listed in. Most useful when a filter applies conditions such as
+    filters and joins that use prefix of the sort keys. Performance can decrease
+    when keys depend on only secondary sort columns without referncing the
+    primary column. You need to think about the order of the columns.
+  * Compound is the default sort type. Also helps to improve compression. 
+* Interleaved sort keys
+  * Interleaved gives equal weight to each column or a subset of columns in the
+    sort key. Can be useful if multiple queries use for different filters. It
+    uses internal compression scheme for zone map...
+
+![sort keys](./img/sort-keys.png)
+
+#### Redshift Data Flows: Importing/Exporting data
+* Important topic for the examp: importing/exporting data from a Redshift
+  cluster
+* COPY command (import data):
+  * You can read from multiple data streams simultaneously
+  * Parallelized; efficient
+  * From S3, EMR, DynamoDB, remote hosts
+  * S3 requires a manifest file and IAM role
+    * Use S3 prefix to load data from S3 followed by authorization
+    * You can also a manifest json file that sits in S3 and lists the data you
+      want to load. 
+* UNLOAD command (export data):
+  * Unload form a table into files in S3
+* Enhanced VPC routing
+  * Force of your copy and unload traffic between your cluster and the
+    repositories through your Amazon VPC. Otherwise all of that copy and unload
+    traffic will be routed through the internet. For this to work you need to
+    configure your VPC correctly or your copy or unload functions will fail.  
+
+#### Redshift copy grans for cross-region snapshot copies
+* Let's say you have a KMS-encrypted Redshift clsuter and a snapshot of it
+* You want to copy that snapshot to another region for backup
+* In the destination AWS region:
+  * Create a KMS key if you don't have one already
+  * Specify a unique name for your snapshot copy grant
+  * Specify the KMS key ID for which you're creating the copy grant
+* In the source AWS region:
+  * Enable copying of snapshots to the **copy grant** you just created
+
+#### DBLINK
+* Connect Redshift to PostgreSQL (possibly in RDS might be hosted on AWS)
+* You can get best of both world: columnar storage (redshift) and row-based
+  storage (PostgreSQL)
+* PostgreSQL cluster and Redshift cluster has to be in the same AZ
+  * You connect VPC securiy group on Redshift cluster to allow connection from
+    the RDS PostgreSQL endpoint. You then connect RDS endpoint and run the SQL
+    code to establish that DBLINK connection between RDS instance and AWS
+    Redshift.
+* Good way to copy and sync data between PostgreSQL and Redshift
+
+#### Integration with other services
+* S3
+  * You can use parallel processing to export your Redshift data to S3
+  * You can also import data from S3 or sitting on top using Spectrum
+* DynamoDB
+  * By using a copy command you can also load a Redshift table using single
+    Amazon DynamoDB Table. 
+* EMR / EC2
+  * You can import data using ssh via the copy command. You can load data from
+    one or more remote hosts such as EMR, or EC2
+* Data Pipeline
+  * Automate the data movement in/out of Redshift and transformation tables
+* Database Migration Service (DMS)
+  * Can migrate your data into Redshift for you (help you with the process)
+
+#### Redshift Workload Managemetn (WLM)
+* It's a way users to prioritize workloads so that fast running queries are not
+  stuck behind long running queries (slow). It works by creating a query queues
+  at runtime according to service classes. And configuration parameters are
+  defined by those service classes.
+* Prioritize short, fast queries vs. logn, slow queries
+* Query queues
+* Via console, CLI or API
+  * You can modify the settings of the service classes
+
+#### VACUUM command
+* Recovers space from deleted rows and to restor the sort order. It cleans up
+  your table.
+* VACUUM FULL: It will resort all the rows and reclaim space from deleted rows
+  (default)
+* VACUUM DELETE ONLY: is the same as the FULL it skips the sorting part. It's
+  reclaiming deleted row space and not sorting
+* VACUUM SORT ONLY: will resort the table but not reclaim disk space
+* VACUUM REINDEX: reinitializing interleaved indexes and perform a FULL VACUUM
+  operation after that
+
+#### Redshift anti-patterns
+* Small data sets
+  * Use RDS instead
+* OLTP
+  * Use RDS or DynamoDB instead
+* Unstructued data
+  * ETL first with EMR etc.
+* BLOB (binary large object) data
+  * Store references to large binary files in S3, not the files themselves
