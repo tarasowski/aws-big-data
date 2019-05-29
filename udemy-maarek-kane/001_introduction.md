@@ -44,3 +44,7 @@
 
 ![case](./img/case-6.png)
 
+
+* All together
+
+![main](./img/main.png
