@@ -375,3 +375,257 @@ emr](https://aws.amazon.com/blogs/big-data/best-practices-for-securing-amazon-em
   * Supports MFA 
   * Encryption at rest and in SPICE
 * Row Level Security to control which users can see which rows
+
+### AWS STS - Security Token Service
+* Allows to grant limited and temporary access to AWS resources
+* Token is valid for up to one hours (must be refreshed)
+* Cross Account Access
+  * Allows users from one AWS account access resources in another
+* Federation (Active Directory)
+  * Provides a non-AWS user with temporary AWS access by linking users Active
+    Directory credentials
+  * Uses SAML (Security Assertion markup language)
+  * Allows Single Sign On (SSO) which enables users to log in to AWS console
+    without assigning IAM credentials
+* Federation with third party providers / Cognito
+  * used mainly in web and mobile applications
+  * Makes use of Facebook/Google/Amazon etc. to federate them
+
+### Cross Account Access
+* Define an IAM Role for another account to access
+* Define which accounts can access this IAM Role
+* Use AWS STS (Security Token Service) to retrieve credentials and impersonate
+  the IAM Role you have access to (AssumeRole API)
+* Temporary credentatils can be valid between 15 minutes to 1 hour
+* User wants to assume Role (sam or other account)
+* Makes an AssumeRole API call to AWS STS
+* AWS STS checks if user is allowed to do that IAM permissions via trusted entity
+* If allowed, AWS STS will send you back temporary security credentials
+* This security credentials will allow you to assume the role you need to
+![cross accoount](./img/cross-account.png)
+
+### Identity Federation
+* Users outside of our organisation don't need an account at AWS to access
+  resources on AWS
+* Federation lets users outside of AWS to assume temporary role for accessing
+  AWS resources
+* These users assume identity provides access role.
+* Use case:
+  * We are an user e.g. of a mobile app and we don't have account at AWS
+  * But we do have 3rd party access to servers to log in e.g. our own servers,
+    cognito, facebook, google
+  * This 3rd party is trusted by AWS. We have defined before hand trust between
+    3rd party and AWS. 
+  * Users will login to the 3rd party (assume they are checking all the infos)
+    and the 3rd party will give back credentials to a user.
+  * As a user we can directly access AWS through the CLI or API.  
+* This is how the identity federation works. The identity is stored on the third
+  party.
+* Federation assumes a from of 3rd party authentication:
+  * LDAP
+  * Microsoft Active Directory (~=SAML)
+  * Single Sign On
+  * Open ID
+  * Cognito
+* Using federation, you don't need to create IAM users (user management is
+  outside of AWS)
+
+#### SAML Federation
+* To integrate Active Directory / ADFS with AWS (or only SAML 2.0)
+* Provides access to AWS Console or CLI (through temporary creds)
+* No need to create an IAM user for each of your employees
+
+1. We are a client app and do connect to idP (which is SAML complient / it could
+   be Microsoft Active directory)
+2. It will authenticate the user based on the user database
+3. When we're authenticated idP will send us a SAML assertion (it's a token)
+4. When we'll get the SAML assertion we'll do call STS assumeRoleWithSaml API.
+   STS checks the SAML assertion (token)
+5. STS will give us back temporary security credentials 
+6. Now with the temporary security credentials we cann access resources at AWS
+
+![saml](https://docs.aws.amazon.com/IAM/latest/UserGuide/images/saml-based-federation.diagram.png)
+
+![console](https://docs.aws.amazon.com/IAM/latest/UserGuide/images/saml-based-sso-to-console.diagram.png)
+
+#### Custom Identity Broker Application
+* Use only if identity provider is not compatible with SAML 2.0
+* You have to program the identity broker must determine the appropriate IAM
+  policy
+* Identity broker will validate our identity with a corporate identity store.
+* If it's happy, the identity broker has super powers and it can ask from STS
+  any security credentials for any policy. 
+
+![id](https://docs.aws.amazon.com/IAM/latest/UserGuide/images/enterprise-authentication-with-identity-broker-application.diagram.png)
+
+#### AWS Cognito - federated Identity Pools For Public Application (for apps)
+* E.g. a user need to put a file into S3 bucket
+* Goal
+  * Provide direct access to AWS Resources from the client side
+* How:
+  * Log into federated identity provder - or remian anonmyous
+  * Get temporary AWS credentials back from the Federated Identity Pool
+  * These credentials come with a pre-defined IAM policy stating their
+    permissions
+* Example:
+  * provide (temporary) access to write to S3 bucket using Facebook login
+* How does it work?
+  1. We have an app and our app is connected to identity provider: Cognito User
+    Pool, Google, Facebook, Twitter, SAML, OpenID
+  2. Our app logs into to the identity provider and gets a token back from
+     identity provider
+  3. The app talks to the federated identity in Cognito 
+  4. The token will be verified by the federated identity provider (Cognito,
+     Google, Facebook)
+  5. The federated identity will get credentials from STS
+  6. The federated identity will send us back temporary AWS credentials
+  7. Now using this credentials we can talk to S3 bucket and make some calls
+
+![federated](https://docs.aws.amazon.com/cognito/latest/developerguide/images/scenario-cup-cib.png)
+
+
+#### Policies - leveraging AWS variables
+* ${aws:username}: to restrict users to tables / buckets (check if some specific
+  username can get the policy or is allowed to do specific operations)
+* ${aws:principaltype}: account, user, federated, or assumed role (check if only
+  specific pricipaltype can get the policy or is allowed to do specific
+  operations)
+* ${aws:PrincipaTag/department}: to restinct using Tags (if the principal tag
+  === department)
+
+[Source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html)
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": ["s3:ListBucket"],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::mybucket"],
+      "Condition": {"StringLike": {"s3:prefix": ["David/*"]}}
+    },
+    {
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::mybucket/David/*"]
+    }
+  ]
+}
+```
+* The variables will be replaced at the runtime
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": ["s3:ListBucket"],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::mybucket"],
+      "Condition": {"StringLike": {"s3:prefix": ["${aws:username}/*"]}}
+    },
+    {
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::mybucket/${aws:username}/*"]
+    }
+  ]
+}
+```
+
+* ${aws:FederatedProvider}: which IdP was used for the user (Cognito, Amazon)
+* ${www.amazon.com:user_id}, ${cognito-identity.amazonaws.com:sub}
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": {
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::BUCKET-NAME/${aws:FederatedProvider}/*"
+  }
+}
+``` 
+* In this example we have a bucket with a prefix for each federated provider
+  (/amazon/, /facebook/, /google/)
+
+[Source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_iam-condition-keys.html)
+
+* S3 bucket policies:
+  [Source](https://docs.aws.amazon.com/AmazonS3/latest/dev/example-bucket-policies.html)
+
+* DynamoDB policies:
+  [Source](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html)
+
+* Note RDS - IAM policies don't help with in-database security, as its a
+  propertiary technology and we are reponsible for users & authorization
+
+
+### CloudTrain
+* Provides governance, complienace and audit for your AWS account
+* It will track every API call that will be made to your account
+* CloudTrail is enabled by default
+* Get an history of events / API calls made within your AWS Account by:
+  * Console
+  * SDK
+  * CLI
+  * AWS Services
+* Can put logs from CloudTrail into CloudWatch Logs
+* If a resource is deleted in AWS, look into CloudTrail first!
+* CloudTrail shows the past 90 days of activity
+* The defalt UI only shows "Create", "Modify", or "Delete" evetns
+* CloudTrail Trail:
+  * Get a detailed list of all the events you choose
+  * Ability to store these events in S3 for further analysis
+* CloudTrail Logs have SSE-S3 encryption when placed into S3
+* Control access to S3 using IAM, Bucket Policy, etc...
+
+### VPC Endpoints
+* Endpoints allow you to connect to AWS Service susing a private network instead
+  of the public www network. With VPC endpoints you are able to connect your
+  private network on AWS.
+* They sxale horizontally and are redundant
+* They remove the need of IGV, NAT, etc... to access AWS Services
+* Gateway: provisions a target and must be used ina route table ONLY for S§ and
+  DynamoDB
+* Interface: provisions an ENI (private IP added) as an entry point (must attach
+  security group) - most AWS services. Also called VPC PrivateLink
+* Example:
+  1. SQS is a public service and accessible on the www (world wide web)
+  2. We want to access SQS from a private EC2 Instance
+  3. You create a VPC Endpoint / PrivateLink, which has a private connection
+     diretly into SQS service.
+  4. To access SQS service EC2 instance will connect the VPC Endpoint /
+     PrivateLink
+
+![vpc](https://d2908q01vomqb2.cloudfront.net/22d200f8670dbdb3e253a90eee5098477c95c23d/2018/04/09/SNS-diagram-01.png)
+
+* You would like to ensure data is encrypted client side before being sent to
+  Kinesis. What should you use? You must create custom code
+* Which technology allows you to access the AWS service from your private
+  subnets without the need to have an outgoing internet connection? VPC Endpoint
+* What do you need to attach to an IoT rule's engine action to ensure it's capable of sending data directly into Kinesis?
+* Which of the following statement is wrong? Users must be created within
+  DynamoDB (The entire security in DynamoDB is managed through IAM, we don't
+  need to create users within DynamoDB (unlike RDS))
+* What security mechanism does not exist for RDS? CloudHSM at rest encryption
+* You would like to deploy a Lambda function to privately access your RDS
+  database. Under the default options, your Lambda function cannot reach your
+  RDS database due to a network issue. How can you resolve it? Deploy a lambda
+  function in your VPC
+* Which statement about EMR security is incorrect? Apache Ranger is packaged
+  within EMR (If you choose to use Ranger, it must be installed externally from
+  your EMR cluster. Recommended read:
+  https://aws.amazon.com/blogs/big-data/best-practices-for-securing-amazon-emr/)
+* Which of the following login is not supported by Kibana? Using email /
+  password combination (it can be only used for QuickSight)
+* Which at rest encryption is not supported by Redshift? LUKS (this is only for
+  EMR) 
