@@ -251,7 +251,7 @@
     Redshift and nice realtime anlytics dashboads. Still use Hive queries but
     minimize them.
 
-![pinterest](./img/pinterest.pgn)
+![pinterest](./img/pinterest.png)
 
   * We that ETL is everywhere and it causes delays. Where ETL is involved it
     makes the system brital and possibly slow. AirBnB has switched to Preso,
