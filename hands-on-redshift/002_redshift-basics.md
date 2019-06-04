@@ -252,3 +252,51 @@ aws_secret_access_key=<secret-access-key>';
   * TRANSACTION (begin, commit, rollback)
   * LOCK
   * DROP (group, user, table)
+
+### Tips
+* Before you do a query you can always run `select count(*) from tablename;` to
+  see how much data is stored there.
+* You are charged on Redshift for outcoming data e.g. when you have a local
+  client running on your laptop and you pull a lot of data across the network.
+  Amazon charges you for bandwidth-out.
+* What makes a good distribtuion key is the join against the largest table
+
+* The code below shows joins of different table
+
+```sql
+where lo_orderdate = d_datekey
+and lo_partkey = p_partkey
+and lo_suppkey = s_suppkey
+```
+
+```sql
+select sum(lo_extendedprice*lo_discount) as revenue  
+from lineorder, dwdate
+where lo_orderdate = d_datekey /* here we join tables */
+``` 
+
+```sql
+select c_city, s_city, d_year, sum(lo_revenue) as revenue
+from customer, lineorder, supplier, dwdate
+where lo_custkey = c_custkey /* here we join tables */
+and lo_suppkey = s_suppkey /* here we join tables */
+and lo_orderdate = d_datekey /* here we join tables */
+```
+
+* There is an overhead to sort keys, don't use them a lot
+* Removing a table is done with the following command. `cascade` means any
+  relationships with those tables should be also dropped.
+
+```
+drop table part cascade;
+drop table supplier cascade;
+drop table customer cascade;
+drop table dwdate cascade;
+drop table lineorder cascade;
+``` 
+
+* When you run your query first time, the query is very slow because the leader
+  node needs to compile them. The second time it is 10x faster.
+
+* Here the full list of SQL queries
+  [link](https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html)
