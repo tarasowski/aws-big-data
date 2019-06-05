@@ -157,3 +157,88 @@
     (don#t put timestamp val in char)
   * For range queries or "equality" ("store_id=885"), use that column as sort
     key
+  * For frequently joined tables (dimenion tables), use the join key as sort key
+
+#### Determining Distkey
+* You have to choose it once during the table creation and you can't change it
+  on the fly
+* Main goals are collocate joined data and distribute query load evenly
+* KEY, ALL, EVEN are all distribution concepts
+* Can only have ONE distkey per table
+* EXPLAIN command returns query plan detail. You can run a command with a
+  EXPLAIN query behind it. You'll get a query planner, how it's going to doing
+  the query, you need to look for things:
+  * Look for DS_BCAST, DS_DIST labels (these are the most expensive). 
+    * DS_BCAST_INNER: Entire inner join tab le was broadcast (network copies) to
+      every slice - very slow queries
+    * DS_DIST_BOTH: Entire inner-and-outer join tables were copied to every
+      slice - very slow queries
+    * Ending in _NONE is good (DS_DIST[_ALL]_NONE). We didn't have to copy or
+      broadcast the tables across all nodes
+
+#### Determing Distkey: START SCHEMA
+* Key diskey collocates only two tables on common column
+  * Use fact table as one of your joins
+  * Choose "longest" join table as second
+  * E.g. PART table has the most records in, it's the biggest table outthere. You
+    probably want to choose that common distkey between those two tables, rather
+    then choosing the customer key, or the supplier key or the datekey. Choose
+    the one with the longest table.
+
+![star key](./img/star-key.png)
+
+* Careful using ALL as distkey
+  * Caan greatly imporve query peformance
+  * And greatly reduce overall storage capacity (because the same data is copied
+    over all nodes)
+    * ("table size" X "# of slices")
+  * EVEN should only be used when you're certain there's no opportunity for KEY
+    or ALL
+* Automatically chosen by COPY command
+* Review compression with:
+  * STV_BLOCKLIST: Table showing # of 1MB blocks used for that data
+  * analyze compression: Command showing current compression encodings
+  * Use results from the two above, create new columns on same data (chaning
+    compression encoding) and run comparison queries and see if new column gives
+    you improved or reduced performance (part of the re-iteration that you do in
+    redshift all the time)
+
+#### Troubleshooting Basics
+* Connection fail: Client network, security (SSL) error
+* Connection refused: Permissions (IAM, Redshift)
+* Client-side out of memory: Results set overflowed client resources (with limit
+  clause)
+
+#### Troubleshooting Slow Queries
+* Tables not optimized
+  * sortkey(s), distkey, compression encoding
+  * Use EXPLAIN. Baseline -> Expreriment -> Baseline -> Experiment
+    * Will tell you what key you are using
+    * Re-iterate
+* Resource contention
+  * Use internal metrics under Performance tab
+  * Use CloudWatch
+  * Use WLM (shor vs long running queues, rules, caps)
+  * If queries are optimized you may need bigger cluster
+  * AWS? In SDK, capture the "requestID", RequestId you can pass back to Amazon,
+    so they can debug internally
+* Queries not optimized
+  * Use EXPLAIN
+* Data layout not optimized?
+  * Hotsspots & data skewing?
+  * sortkey(s) determine the zone maps
+  * Different tables for different queries
+
+#### Spilling To Disk
+* Spilling to disk is one of the largest issues!
+
+```sql
+select query, step, rows, workmen, label, is_diskbased
+from svl_query_summary
+where query = [YOUR-QUERY-ID]
+order by workmen desc;
+``` 
+* You need to look for `is_diskbased` it will tell you if the disk is spilled. 
+* Spilled disk means is the information that you are storing that you are trying
+  to process really quickly burst the memory capacity of a single instance/slice
+  and it had to dump the memory in order to keep things running
