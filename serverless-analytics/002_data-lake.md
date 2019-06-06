@@ -71,9 +71,38 @@
     * Notebooks (kind of IDE's, Apache Zepplin, Jupyter)
     * BI Tools (endpoint applications)
 * Characteristics of a Data lake?
-  * Collect and store any data, at any scale, and at low cost
-  * Secure the data and prevent unauthorized access
-  * Catalogue, search, and discover data
-  * Decouple Compute from Storage
-  * Future Proof against a highly changing complex ecosystem
+  * Collect and store any data, at any scale, and at low cost (S3)
+  * Secure the data and prevent unauthorized access (IAM)
+  * Catalogue, search, and discover data (AWS Glue)
+  * Decouple Compute from Storage (storage S3 and compute ELT (EMR, Glue))
+  * Future Proof against a highly changing complex ecosystem (open for new data
+    sources and formats)
+* Data Lakes extend traditional warehouse
+  * Via Data Catalog Data warehouse can access the data e.g. Spectrum
+  * Relational and non relational data
+  * Teraybtyes to Exabytes scale
+  * schema defined during analysis
+  * Diverse analytics engines to gain insights
+  * Designed for low cost storage and analytics (no ETL, you can make use of the
+    data)
+* Decouple storage and compute
+  * Legacy design was large databases or data warehouses with integrated
+    hardware
+  * Big data architectures often benefit form decoupling storage and compute
+  * Specturm does the compute, S3 does the storage
+  * Athena does the compute, S3 does the storage
+
+![data lake services](./img/data-lake-services.png)
+
+![layers](./img/layers.png)
+
+* See the point API Gateway to access Athena programatically without having
+  direct access to AWS. To make the platform more independent.
+![simple](./img/simple.png)
+
+* Redshift Specturm can query the data from the Redshift as well as from S3.
+  This is how you can mix the data.
+
+![dw lake](./img/dw-lake.png)
+
 
