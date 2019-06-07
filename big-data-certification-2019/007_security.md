@@ -170,7 +170,7 @@
     make sure we have do decrypt access and look at the key policy
   * Decryption will happen and will get a decrypted secret back in a plain text.
 
-![kms](./img/kms.pgn)
+![kms](./img/kms.png)
 
 #### Encrypton in AWS Services
 * Requires migration (through Snapshot / Backup). First backup and then create

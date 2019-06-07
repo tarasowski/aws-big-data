@@ -1,0 +1,1 @@
+pandoc -f markdown -t epub -o aws-big-data-certification-2019.epub *.md --metadata title="aws big data certification 2019"
