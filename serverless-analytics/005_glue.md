@@ -335,4 +335,40 @@ SELECT * FROM "myfirstgluedb"."citydata" where partition_0='Active'
   table gets created.
 ![data stores](./img/data-stores.png)
 
+### AWS Glue Authoring Workflow
+1. You choose the data sources for your job. The tables that represent your data
+   source must already be defined in your Data Catalog. If the source requires a
+   connection, the connection is also referenced in your job.
+2. You choose the data targets of your job. The tbles that represent the data
+   target can be defined in your Data Catalog, or your job can create the target
+   tables when it runs. You choose a target location when you author the job. If
+   the target requires a connection, the connection is also referenced in your
+   job.
+3. You customize the job-processing environment by providng arguments for your
+   job and generated script.
+4. Initially, AWS glue generates a script, but you can also edit your job to add
+   transforms.
+5. You specify how your job is invoked, either on demand, by a time-based
+   schedule, or by an event.
+6. Based on your input, AWS glue generates a PySpark or Scala script. Youc an
+   tailor the script based on your business needs.
 
+### AWS Glue Job Features
+* A job consists of the business logic that performs extract, transform, and
+  load (ETL) work in AWS. 
+* You can monitor job runs to understand metrics such as success, duration, and
+  start time
+* The output of a job is your transformed ata, written to a location that you
+  specify
+* Jobs runs can be initiated by triggerts that start a job when they fire
+* A job contains a script that connects to your source data, process your data
+  using the script's logic, and then writes it out to your data target
+* A job can have multiple data sources and multiple data targets
+* You can use scripts that are tenerated by AWS Glue to transforms data, or you
+  can provide your own. The AWS Glue generator can automatically create an
+  Apache Spark API (PySpark) script gives a source schema and target location or
+  schema.
+* You can use this script as a starting point and edit it to meet your goals
+* AWS Glue can write output files in several data formats, including JSON, CSV,
+  ORC, Parquet, Avro.
+* For some data formats, common compression formats can be written
