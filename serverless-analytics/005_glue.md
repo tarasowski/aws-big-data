@@ -482,4 +482,45 @@ SELECT * FROM "myfirstgluedb"."citydata" where partition_0='Active'
     is an exception, processing continues, and the record is marked as an error
   * MapToCollection - Applies a transofrm to each DynamicFrame in a
     DynamicFrameCollection
-  * Rationalize - Converts a DynamicFrame to 
+  * Rationalize - Converts a DynamicFrame to a relational (rows and columns)
+    form. Based on the data's schema, this transform flattens nested structures
+    and creates DynamicFramews from arrays structures. The output is collection
+    of DynamicFramews that can result in data twirrten to multiple tables.
+  * RenameField - Renames a filed in a DynamicFrame. The output is a
+    DynamicFrame with the specified field renamed. You provide the new name and
+    teh path in the schema to the field to be renamed
+  * ResolveChoice - Use ResolveChoice to specify how a column should be
+    handleded when it contains values of multiple types. You can choose to
+    either cast the column to a single data type, discard one or more of the
+    types, or retain all types in either separate columns or a structure. You
+    can select a different resolution policy for each column or specify a global
+    policy that is applied to all columns
+  * SelectFromCollection - Selects one DynamicFrame from a collection fo
+    DynamicFrames. The output is the selected DynmiacFrame. You provide an index
+    to the DynamicFrame to select
+  * SelectFields - Selects fileds from a DynamicFrame to keep. The output is a
+    DynamicFrame with only the selected fields. 
+  * Spigot - Writes sample data from a DynamicFrame. Output is a JSON file in
+    Amazon S3. You specify the S3 location and how to sample the DynamicFrame.
+    Sampling can be a specified number of records from the beginning of the file
+    or a probability factor used to pick records to write.
+  * SplitFields - Splits fields into two DynamicFrames. Output is a collection
+    of DynamicFramews: one with selected fields, and one with the reamining
+    fields.
+  * Unbox - Unboxes a string field from a DynamicFrame. The output is a
+    DynamicFrame with the selected string field reformated.
+
+
+### Glue Job Bookmark
+
+* AWS Glue keeps track of data that has already been processed by a previous run
+  of an extract, transform, and load (ETL) job. This presisted state information
+  is called a job bookmark
+* A job bookmark is composed the states for various elements of jobs, such as
+  sources, transformations and targets.
+* For example, your ETL job might read new partitions in an Amazon S3 file. AWS
+  Glue tracks which partitions have successfully been processed by the job to
+  prevent duplicate processing and dubplicate data in the job's target data
+  store
+* AWS Glue supports job bookmarks for S3 source formats of JSON, CSV, Avro, and
+  XML. Parquet and ORC are not supported yet.
