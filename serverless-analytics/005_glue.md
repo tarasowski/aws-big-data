@@ -524,3 +524,19 @@ SELECT * FROM "myfirstgluedb"."citydata" where partition_0='Active'
   store
 * AWS Glue supports job bookmarks for S3 source formats of JSON, CSV, Avro, and
   XML. Parquet and ORC are not supported yet.
+
+### AWS Glue Triggers
+* You decide what triggers an extract, transform and load (ETL) job to run in
+  AWS Glue. The triggering condition can be based on a schedule (cron) or on an
+  event. You can also run a job on demand.
+* When you create a trigger based on an event, you specify events to watch that
+  cause the trigger to fire, such as when another job succeeded
+* For a conditional trigger based on a job events trigger, you specify a list of
+  jobs that cause a trigger to fire when any or all jobs satisfy the watched job
+  events. In turn, when the trigger fires, it starts a run of any dependent jobs
+
+
+### AWS Glue Dev Ops
+* Instead of running script / jobs, you can setup development endpoint to query the
+  live data. By doing this you can see how your scripts are working.
+* Apache Zeppelin Notebook runs your script on your EMR machines.
