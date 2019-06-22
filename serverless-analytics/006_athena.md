@@ -116,7 +116,8 @@ WITH SERDEPROPERTIES (
 TBLPROPERTIES ('has_encrypted_data'='false');
 ``` 
 
-#### Amazon Athena DDL - Data Types
+#### Amazon Athena 
+#### Data Types
 * primitive data types
 * array type
 * map type
@@ -144,3 +145,67 @@ TBLPROPERTIES ('has_encrypted_data'='false');
 create external table if not exists db_name.table_name
 'classification'='aws-glue_classification'...
 ```
+
+#### AWS Athena - SerDe
+* When you create a table in Athena it has a property SerDe. Those SerDe is not
+  used by ETL jobs, it is used by Athena.
+* Athena supports creating teables and querying data from files in CSV, TSV
+  custom-delimited, and JSON formats; files from Hadoop-related formats: ORC,
+  Apache Avro, and Parquet; log files from Logstash, AWS CloudTrail Logs, and
+  Apache WebServer logs.
+* To create tables and query data from files in the formats in Athena, specify a
+  serializer-deserializer class (SerDe) so that Athena knows which format is
+  used and how to parse the data
+* A SerDe is a custom library that tells the data catalog used by Athena how to
+  handle the data. A SerDe (Serializer/Deserializer) is a way in which Athena
+  interacts with data in various formats
+* Athena suppors several SerDe libraries for parsing data from different data
+  formats, such as CSV, JSON, Parquet, and ORC. Athena does not support custom
+  SerDes.
+* It is the SerDe you specify, and not the DDL, that defines the table schema.
+  In other words, the SerDe can override the DDL configuration that you specify
+  in Athena when you create your table
+* You specify a SerDE type by listing in explicitly in the ROW FORMAT part of
+  your CREATE TABLE statement in Athena. In some cases, you can omit the SerDe
+  name because Athena uses some SerDe types by default for certain types of file
+  formats
+* In general, Athena uses the LazySimpleSerDe if you do not specify a ROW
+  FORMAT, or if you specify ROW FORMAT DELIMITED
+* Use the LazySimpleSerDe for CSV, TSV, and Custom-Delimited Files
+* Use the following SerDes for the corresponding types of files:
+  * Use the LazySimpleSerDe for CSV, TSV, and Custom-Delimited Files
+  * Use the Hive JSON or OpenX JSON Serde for Json files
+  * Use the Avro SerDe for Apache AVRO files
+  * Use the ORC SerDe and ZLIB Compression for Optimized Row Columnar (ORC)
+    files
+  * Use the Parquet SerDe and SNAPPY Compression for Apache Parquet files
+  * Use the Grok SerDe for Logstash log files
+  * Use the Regex SerDe for Apache Webserver Log files
+  * Use the CloudTrail SerDe for CloudTrail log files
+
+#### Athena Querying Logs
+* CloudTrail Logs
+* CloudFront Logs
+* Classic Load Balancer Logs
+* Application Load Balancer Logs
+* VPC Flow Logs
+
+
+#### Athena Limitations
+* Athena does not support the following features, which are suppoerted by an
+  open source Presto version 0.172
+  * User defined functions (UDFs or UDAFs)
+  * Stored procedures
+  * Insert into statements
+  * Athena supports the following compression formats:
+    * Snappy (default for Parquet)
+    * Zlib (default for ORC)
+    * Gzip
+    * Lzo
+* You may encounter a limit for S3 buckets per account, which is 100. Athena
+  also needs a separate bucket to log results
+* Athena query timeout is 30 minutes
+* By default, concurrency limits on your accoutn allow you to submit twenty
+  concurrent DDL queries (used for creating tables and adding partitions) and
+  twenty concurrent `select` queries at a time. This is a soft limit and you can
+  request a limit increase for concurrent queries.
