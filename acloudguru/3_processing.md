@@ -320,5 +320,311 @@ INSERT OVERWRITE DIRECTORY 's3://emrdemodt/output/' select sum(l_discount) from 
   * CloudWatch Events:
     * Respond to state changes in resources
     * Send event into the stream
-![events](./img/cwevents.png)
     
+![events](./img/cwevents.png)
+
+  * CloudWatch Metrics
+    * 5 minute updates
+    * Archvied for two weeks
+    * No charges
+
+  * Web Interfaces
+    * SSH tunnel to master node using local port forwarding
+    * Ganglia (for monitoring) 
+      * Open source monitoring system you can install with your cluster
+      * Runs on the master node and can be connected through ssh
+    * Zeppelin (also for monitoring)
+    * Hue (also for monitoring)
+
+* Resizing:
+  * Manually:
+    * Just in the interface you can click on the buttons
+    * Scale down the task/core nodes manually (called Graceful shrink):
+      * terminate at instance hour
+      * terminate at task completion
+      * Resizing core node group: The resizing process is minimize the data loss
+        by minimizing HDFS
+      * Keep replication factor in mind, you cannot have less core nodes than
+        the replication factor
+      * Change replication factor in hdfs-site.xml, restart NameNode daemon
+  * Auto-scaling:
+    * You need to create EMRAutoScalingCustomRole (you need to create this role
+      while bootstraping the cluster, no possibility to change it later)
+    * Scale out policy: e.g. if my HDFS running out of space (HDFSUtilization >
+      70%)
+    * Scale in policy:
+
+#### Usng Hue & EMR
+* Hadoop user experience
+  * Open source web interface for Hadoop and other non-Hadoop applications
+  * Browser-based without using the command line
+  * Easier to manage the EMR cluster
+  * Hue has S3 browser for seeing data in S3
+  * You can use Hive to create tables (metastore) and run queries against the table  the data can be in S3
+  * With Hue you can access the metastore from above and see more informations
+  * HBase (NoSQL db) & Zookeepeer (key/value store) are also in the Hue and can
+    be seen from the interface
+  * Hue has a job browser where you can see the status of your jobs
+  * You can search and access the server logs
+  * With Hue you get an Ouzie editor you can schedule scoop jobs
+  * Scoop is data migration tool that allows you to transfer data from RDS
+  * You can use different auth (e.g. LDAP, the config should be in S3) providers to log in into Hue
+
+![Hue](./img/hue.png)
+
+#### Apache Hive
+* Data warehouse infrastructure built on top of Hadoop
+* Allows to Summarize, Query and Analyze very large data sets
+* Is using SQL-like interface
+* Hive is useful for non-Java programmers
+  * Hive is implemented in Java
+  * Hive provides SQL abstraction to intergrate HiveQL queries into the
+    underlying Java API without having to write Java programs
+* Hive is a high-level programming language
+  * Programming language with strong abstraction from the details of the
+    computer, surpassing the more complex details below the current level
+  * Needs an interpreter (the high-level are not close to the hardware)
+  * Process and analyze logs
+  * Join every large tables
+  * Batch jobs (Ouzie)
+  * Ad-hoc interactive queries against S3 and HDFS
+* You can use Hive CLI or Hue to fire the queries
+  * Once the Hive driver receives the statement (query) and compiles and
+    executes the Hive QL. The metastore stores data for each of the tables such
+    as schema, location, partition metadata (resides in SQL database on the cluster), which helps the driver to find the
+    data which is distributed over the cluster
+  * The Hive query is converted into MapReduce code and executed
+  * Yarn allocates resources across the cluster
+  * Tez is a framework designed to improve performance for batch and interactive
+    queries that are coordinated by Yarn. Hive queries can be converted to Tez
+    and executed. In Emr version 5 and above. Tez is the default execution
+    engine instead of MapReduce
+  * The query is run agains HDFS or S3 where data is stored in different file
+    formats such as json, avro, orc, parquet
+
+![Hive](./img/hive.png)
+
+* Apache Hive and Hive on ERM there are differences
+  * Hive on EMR integrates w/ S3
+    * Read from S3 and write to S3
+    * EMRFS extends the data from Hadoop
+    * Hive supports parititoning in Hive (better performance)
+    * Time based data or source based with date (partitioning) 
+    * You need to create the partitions first and load the partitions
+    * If there are not partition and you specify a where claus, all data is
+      scanned
+  * DynamoDb
+    * Join Hive and DynamoDb table
+    * Query data in DynamoDb table
+    * Copy data from DynamoDB to HDFS
+    * EMR DynamoDB connector
+    * When you create a new table in Hive and don't use the word `external` the
+      data will end up on HDFS otherwise the data will be in the original source
+    * You can also copy data from the external table into local table `insert
+      overwrite table hive_region select * from region;` `hive_region = local`
+      and `region = external`
+    * Then we create an external table in Hive for DynamoDb that is mapped to
+      the attributes in DynamoDB
+    * When you run `insert overwrite table ddb_region select r_regionkey,
+      r_name, r_comment from hive_region;` you can copy the data that was copies
+      from external table to HDFS and will be copied to the DynamoDB table.
+    * You can also query a DynamoDb table from Hive too `select * from
+      ddb_region;` because `ddb_region = external table in DynamoDb`
+  * Kinesis Streams (EMR connector is depricated)
+
+* Serializer/Deserializer (SerDe)
+  * Read data and write it back to HDFS or EMRFS in any format and vice versa
+  * Everyone can write their own SerDe for their own formats
+  * e.g. JSON SerDe, RegEx SerDe to read the log files (e.g. CloudFront logs)
+
+![db](./img/db.png)
+
+#### HBase on EMR
+* Apache HBase is a massively scalable, distributed big data store in the Apache
+  Hadoop ecosystem. It is an open-source, non-relational, versioned database
+  which runs on top of S3 (using EMRFS) or the Hadoop Distributed Filesystem
+  (HDFS), an it is buiilt for random, strictly consistent realtime access for
+  tables with billions of rows and millions of columns.
+* Integrates with Hadoop, Hive and Phonenix so you can combine massively
+  parallel analytics with fast data access.
+* Use cases:
+  * Ad tech for clickstream analysis to move incremental data 
+  * Content (Facebook - messenger feature to store messages, Spotify)
+  * Financial Data (FINRA) - run HBase on EMR to search and display market
+    events
+* When should you use HBase?
+  * Large amounts of data - 100s of GBs to PBs
+  * High write throughput and update rates
+  * NoSQL, flexible schema
+  * Fast access to data, random and real-time
+  * Fault-tolerance in a non-relational environment
+* When not to use HBase?
+  * Transactional applications (e.g. online store)
+  * Relational database type features
+  * Small amount of data
+* HBase vs. DynamoDB
+  * wide column store vs. key/value store
+  * no row size restrictions vs. item size restricted to 400kb
+  * flexible row key data types vs. scalar types
+  * index creation is more manual vs. easier index creation
+* HBase vs. Redshift
+  * column-oriented vs. column-oriented
+  * write throughput and updates perform well vs. batch writes (copy
+    recommended) and update are slow (not recommended)
+  * near-real-time looksups (over fast changing data) vs. OLAP (large complex
+    queries, JOINS, aggregations)
+* Zookeeper is a distributed coordination service to maintain service state
+  within a cluster
+* HBase tables are split between regions
+* HBase is built on top of HDFS
+* HBase integrates with Hadoop can be used to read/write data
+* HBase data can be accessed via Hive / Phoenix / HBase Shell `hbase shell &&
+  create 'epl', 'teams' && put 'epl', 'r1', 'teams:col1', 'Liverpool'`  
+* For the exam:
+  * What is HBase?
+  * When to use HBase and when NOT to?
+  * Compared to DynamoDB and Redshift
+  * HBase integration with Hadoop, Hive, Phoenix, HDFS and EMRFS
+
+#### Presto on EMR
+* Usually you can store a json file to install and configure component on EMR
+* Open-source in-memory distributed fast SQL query engine
+* Run iteractive analytic queries against a variety of data sources with sizes
+  ranging from GBs to PBs
+* Faster than Hive
+* Advantages of using Presto
+  * Query different types of data sources from relational databases, NoSQL
+    databases, frameworks like Hive to stram procssing platforms like Kafka see
+    the full list of connectors on aws website 
+  * Hight concurrency, run thousands of queries per day (sub-second to minutes)
+  * In-memory processing helps avoid unnecessary I/O, leading to low latency
+  * Does not need an interpreter layer like Hive needs one
+* Dont' use Presto for:
+  * Not a database and not designed for OLTP
+  * Joining very large (100M plus rows) requires optimization (use Hive instead)
+  * Batch processing that require a lot of memory, Presto could fail (Presto is
+    good for interactive queries)
+  * With Presto there is no Disk I/O and the data from the query needs to fit
+    into memory. Queries that require a lot of memory can fail
+
+![Presto](./img/presto.png)
+
+* Queries are submitted from the client  such as the Presto CLI to the
+  Coordinator
+* The coordinator parses, analyses and plans the execution
+* The coordinator uses the connectors for the specific data source you are
+  connecting too in order to get the metadata from the datasources and build a
+  query plan
+* Once the query plan is build there is a scheduler on the coordinator that
+  performs the execution and assigns the the processing to the workers, the
+  workers process rows from HDFS or S3 and return the results to the client
+* For the exam:
+  * Where Presto should be used and not be used
+
+
+#### Apache Spark
+* Fast engine for procesing large amounts of data
+* Run in-memory (100x faster than MapReduce)
+* Run on disk (10x faster than MapReduce)
+* Use cases:
+  * Interactive Analytics
+    * Faster than running queries in Hive
+    * Flexibility in terms of languages (Scala, Python)
+    * Run queries against live data (Spark 2.0)
+      * Structured streaming
+  * Stream Processing
+    * Disparate data sources
+    * Data in small sizes and process it for real-time analysis
+  * Machine Learning
+    * Repeated queries at scale against data sets
+    * Train machine learning algo
+    * Machine Learning Libraray (MLlib)
+  * Data Integration
+    * ETL
+    * Reduce time and cost
+* When not to use Spark:
+  * Not a database and not designed for OLTP
+  * Avoid using Spark for big batch jobs (very minimal disk i/o so the query
+    that requires a lot of memory should be used with Hive)
+  * Avoid for large multi-user reporting environments with high concurrency.
+    Adding more users may need lot of memory
+     * Run ETL in Spark and copy the data to a typical reporting database
+     * Run batch jobs in Hive instead and schedule them using Ouzie
+
+##### Spark Modules
+* Spark Core:
+  * General execution engine
+    * Dispatch and schedule of tasks
+    * Memory management
+    * Support of APIs for Scala, Python, SQL, R and Java
+    * Support the following APIs to access data
+      * Resilient Distributed Datasets (RDDs) are a logical collection fo data
+        partitioned across machines
+      * DataSet is a distributed colleciton of data
+      * DataFrame is a DataSet organized into named columns
+* Spark SQL:
+  * Run-low latency interactive SQL queries against structured data
+  * Query Hive tables using HiveQL
+  * Query and copy data to databaes
+* Spark Streaming:
+  * Data can be ingested from Kafka, Flume, Kinesis
+  * Input data -> spark streaming ---> batches of input data ---> spark engine
+    ---> batches of processed data
+* Spark MLlib:
+  * Out-of-the box machine learning algorihtms
+  * Read data into MLlib from HBase, S3, HDFS
+  * APIs in Python, Scala, R etc.
+* Cluster Managers:
+  * Driver Program coordinated processes
+  * Driver Program connects to Cluster Manager
+  * Spark acquires executors
+  * Spark sends application code to executors
+  * Driver Program sends tasks to the executors to run
+* Spark doesn't require Hadoop, but you need to run a scheduler. With Hadoop it
+  uses Yarn. With Yarn on your cluster you don't need Apache Mesos.
+
+* Spark Framework removes MapReduce framework
+* The nodes can pull data directly from S3 as well output data to S3
+
+![spark](./img/spark.png)
+
+* Spark Streaming and Kinesis Streams:
+  * High-level abstraction called DStreams (Discretized Streams), which are a
+    continuous stream of data
+  * DStreams can be created from input data streams from sources like Kinesis
+    Streams
+  * DStreams are a collection of RDDs (Resilient distributed data set)
+  * Transformations are applied to the RDDs
+  * Results published to HDFS, databases or dashboards
+
+![spark](https://spark.apache.org/docs/2.3.0/img/streaming-kinesis-arch.png)
+
+![dynamodb](https://snowplowanalytics.com/assets/img/blog/2015/06/kinesis.png)
+
+* Spark and Redshift
+  * Spark for ETL 
+    * Hive tables in HDSF or S3, text files (csv), parquet
+    * ETL in Spark gives you a performance benefit
+  * Once the ETL is completed you can send the data to Redshift to analysis
+    (https://github.com/databricks/spark-redshift)
+  * Databrick's Spark-Redshift library
+    * Reads data from REdshift and can write back to Redshift by loading data
+      into Spark SQL DataFrames
+        * Executes the Redshift UNLOAD command to copy data to a S3 bucket
+        * Reads the files in S3 bucket
+        * Spark SQL DataFrame is generated (as temporary table)
+        * Queries can then be executed
+    * Spark-Redshift allows you to work with data in S3, Hive tables, text or
+      Parquet files on HDFS
+
+* Following posts should be read for the exam:
+  * https://aws.amazon.com/blogs/big-data/analyze-your-data-on-amazon-dynamodb-with-apache-spark/
+  * https://aws.amazon.com/blogs/big-data/analyze-realtime-data-from-amazon-kinesis-streams-using-zeppelin-and-spark-streaming/
+  * https://aws.amazon.com/blogs/big-data/optimize-spark-streaming-to-efficiently-process-amazon-kinesis-streams/
+  * https://aws.amazon.com/blogs/big-data/powering-amazon-redshift-analytics-with-apache-spark-and-amazon-machine-learning/
+  * https://aws.amazon.com/blogs/big-data/using-spark-sql-for-etl/
+
+* For the exam:
+  * Know how Spark Streaming and Kinesis Streams work together
+  * High level understanding of how Spark integrates wtih Redshift and DynamoDB
+  * Read the blog posts from above
