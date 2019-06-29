@@ -509,7 +509,7 @@ INSERT OVERWRITE DIRECTORY 's3://emrdemodt/output/' select sum(l_discount) from 
 
 ![Presto](./img/presto.png)
 
-* Queries are submitted from the client  such as the Presto CLI to the
+* Queries are submitted from the client such as the Presto CLI to the
   Coordinator
 * The coordinator parses, analyses and plans the execution
 * The coordinator uses the connectors for the specific data source you are
@@ -628,3 +628,157 @@ INSERT OVERWRITE DIRECTORY 's3://emrdemodt/output/' select sum(l_discount) from 
   * Know how Spark Streaming and Kinesis Streams work together
   * High level understanding of how Spark integrates wtih Redshift and DynamoDB
   * Read the blog posts from above
+
+#### EMR File Storage & Compression
+* In HDSF data files are split into chunks automatically by Hadoop
+* If your data files are stored in S3, Hadoop will split the data on S3 by
+  reading the files in multiple HTTP range requests
+* A compression algorithm must allow splitting, if this is not allowed a single
+  file be read
+* If compresion algorithm allows for splits, Hadoop will split the file into
+  chunks and consume it in chunks
+* Alogrithms:
+  * GZIP
+  * bzip2
+  * LZO
+  * Snappy
+
+![compression](https://image.slidesharecdn.com/emrdeepdive-20161027-aanwin-161025234042/95/amazon-emr-deep-dive-best-practices-61-638.jpg?cb=1477438927)
+
+* Hadoop will check files extention and do all the job for you, you don't need
+  to do anything
+* Through compression you will get better performance when less data is
+  transfered between S3, mappers and reducers
+* Less network traffic between S3 and EMR
+* Compression helps you to reduce storage costs
+* EMR formats supports:
+  * Text (csv, tsv)
+  * Parquet - Columnar-oriented file format
+  * ORC - Optimized Row Columnar file format (highly optimized for Hive)
+  * Sequence - Flat files consisting of binary key/value pairs
+  * Avro - Data serilaization framework
+* EMR file sizes:
+  * GZIP files are not splittable, keep them in the 1-2 GB range
+  * Avoid smaller files (100MB or less), plan for fewer larger files
+  * S3DistCp can be used to combine small files into larger files
+    * An extension of DistCp allow you to copy data between clusters
+    * S3DistCp can be used to copy data between S3 buckets or S3 to HDFS or HDFS
+      to S3
+    * S3DistCp can be added as a step as part of the cluster launch
+
+* Some other notes on compression:
+  * Compression is not recommended if your data is already compressed (such as images in JPEG format). In fact, the resulting file can actually be larger than the original.
+  * GZIP compression uses more CPU resources than Snappy or LZO, but provides a higher compression ratio. GZip is often a good choice for cold data, which is accessed infrequently. Snappy or LZO are a better choice for hot data, which is accessed frequently.
+  * BZip2 can also produce more compression than GZip for some types of files, at the cost of some speed when compressing and decompressing. HBase does not support BZip2 compression.
+  * Snappy often performs better than LZO. It is worth running tests to see if you detect a significant difference.
+  * For MapReduce, if you need your compressed data to be splittable, BZip2,
+    LZO, and Snappy formats are splittable, but GZip is not. Splittability is
+    not relevant to HBase data.
+    [Source](https://www.cloudera.com/documentation/enterprise/5-3-x/topics/admin_data_compression_performance.html)
+
+### EMR Lab
+* We create external tables in hive
+* Run the query in Hive
+
+```sql
+Table DDL:
+
+create external table orders
+(O_ORDERKEY INT,
+O_CUSTKEY INT,
+O_ORDERSTATUS STRING,
+O_TOTALPRICE DOUBLE,
+O_ORDERDATE STRING,
+O_ORDERPRIORITY STRING,
+O_CLERK STRING,
+O_SHIPPRIORITY INT,
+O_COMMENT STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+LOCATION 's3://bigdatalabdt/emrdata/';
+
+
+create external table lineitem (
+L_ORDERKEY INT,
+L_PARTKEY INT,
+L_SUPPKEY INT,
+L_LINENUMBER INT,
+L_QUANTITY INT,
+L_EXTENDEDPRICE DOUBLE,
+L_DISCOUNT DOUBLE,
+L_TAX DOUBLE,
+L_RETURNFLAG STRING,
+L_LINESTATUS STRING,
+L_SHIPDATE STRING,
+L_COMMITDATE STRING,
+L_RECEIPTDATE STRING,
+L_SHIPINSTRUCT STRING,
+L_SHIPMODE STRING, L_COMMENT STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+LOCATION 's3://bigdatalabdt/emrdata/';
+
+
+Spark SQL setting (Turn off verbose logging):
+
+sudo sed -i -e 's/rootCategory=INFO/rootCategory=WARN/' /etc/spark/conf/log4j.properties
+
+
+TPC-H Query:
+
+select
+  l_shipmode,
+  sum(case
+    when o_orderpriority ='1-URGENT'
+         or o_orderpriority ='2-HIGH'
+    then 1
+    else 0
+end
+  ) as high_line_count,
+  sum(case
+    when o_orderpriority <> '1-URGENT'
+         and o_orderpriority <> '2-HIGH'
+    then 1
+    else 0
+end
+  ) as low_line_count
+from
+  orders o join lineitem l
+  on
+    o.o_orderkey = l.l_orderkey and l.l_commitdate < l.l_receiptdate
+and l.l_shipdate < l.l_commitdate and l.l_receiptdate >= '1994-01-01'
+and l.l_receiptdate < '1995-01-01'
+where
+  l.l_shipmode = 'MAIL' or l.l_shipmode = 'SHIP'
+group by l_shipmode
+order by l_shipmode;
+``` 
+
+* Spark SQL is compactible with Hive metastore
+* Spark SQL is also support major of Hive features, we can run the same query
+  from above
+* The first step is to log into `spark sql` in the terminal
+* The next step is to load the tables into cache `cache tablename`
+* The last step is to run a query e.g. from above
+* The same query that we run in Hive took only 1.5m in Hive 6.5m
+* Spark SQL is significantly faster than Hive
+
+
+### Lambda
+* Isolated and stateless run in an isolated environment
+* No persistance and you need to store the information somewhere
+* Lambda is event-driven
+* Who can invoke lambda?
+  * S3
+  * DynamoDb Stream
+  * Kinesis Stream
+  * Redshift Amazon Database loader (files can be pushed to S3 and loaded
+    automatically into Redshift)
+  * IoT
+  * Kinesis Firehose (Transformation)
+  * ElasticSearch can be integrated to load data into the service 
+  * Lambda function to activate a data pipeline
+* [Serverless
+  MapReduce](https://aws.amazon.com/blogs/compute/ad-hoc-big-data-processing-made-simple-with-serverless-mapreduce/)
+
+* Lambda Loader into Redshift: 
+
+![redshift lambda](https://dmhnzl5mp9mj6.cloudfront.net/bigdata_awsblog/images/Wavelength%20image%201a.png)
