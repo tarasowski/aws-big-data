@@ -782,3 +782,58 @@ order by l_shipmode;
 * Lambda Loader into Redshift: 
 
 ![redshift lambda](https://dmhnzl5mp9mj6.cloudfront.net/bigdata_awsblog/images/Wavelength%20image%201a.png)
+
+
+#### HCatalog
+* Allows you to access the Hive metastore tables with other data processing
+  applications 
+    * Pig
+    * SparkSQL
+    * Custom MapReduce Applications
+
+* **Important:** Alaways look for Spot instances to reduce costs by 40-80%
+
+* Hive
+```sql
+create external table student
+(STUDENT STRING,
+STUDENT_ID INT)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|';
+
+insert into student values('SANJAY','001');
+``` 
+* Pig
+```sql 
+pig -useHCatalog
+
+A = LOAD 'student' USING org.apache.hive.hcatalog.pig.HCatLoader();
+
+dump A;
+``` 
+
+### Glue
+* When you should use Glue vs. other services
+  * Data Pipeline
+    * Heterogenous jobs (Hive, Pig)
+    * Control over where code runs and access to those environments (EC2, EMR)
+  * EMR
+    * Flexibility
+    * More maintenance
+    * Monitoring ETL jobs not as easy
+  * DMS
+    * Database migration and replication
+  * Kinesis Data Analytics
+    * Run SQL again incoming data
+
+* Data Catalog with Glue use as your Hive metastore for EMR
+
+
+### Quiz
+* Spark Streaming uses the Kinesis Client Library (KCL) to consume data from a Kinesis stream. KCL handles complex tasks like load balancing, failure recovery, and check-pointing. 
+* D2 and I3 instance types provide you with various options in terms of the amount of instance storage. This instance storage can be used for HDFS if the I/O requirements of the EMR cluster are high. 
+* The instance store is ideal for temporary storage, because the data stored in instance store volumes is not persistent through instance stops, terminations, or hardware failures. For data you want to retain longer, or if you want to encrypt the data, use Amazon Elastic Block Store (Amazon EBS) volumes instead.
+* With a transient cluster, the input data is loaded, processed, the output data is stored in S3 and the cluster is automatically terminated. Shutting-down the cluster automatically ensures that you are only billed for the time required to process your data. 
+* The bzip2 compression algorithm has the highest compression ratio. 
+* Presto is a fast, open-source, in-memory, distributed SQL query engine. Since it uses ANSI SQL, you don’t have to learn another language to use it. It is used to run interactive analytic queries against a variety of data sources with sizes ranging from GBs to PBs. These data sources include Cassandra, Hive, Kafka, MongoDB, MtSQL, PostgresSql, Redis, and a number of others. Presto is also significantly faster than Hive.
+* Do not use Spark for batch processing. With Spark, there is minimal disk I/O, and the data being queried from the multiple data stores needs to fit into memory. Queries that require a lot of memory can fail. For large batch jobs, consider Hive. Also avoid using Spark for multi-user reporting with many concurrent requests. 
+* The Kinesis Client Library (KCL) helps you consume and process data from a Kinesis data stream. This type of application is also referred to as a consumer. The KCL takes care of many of the complex tasks associated with distributed computing, such as load balancing across multiple instances, responding to instance failures, checkpointing processed records, and reacting to resharding.
