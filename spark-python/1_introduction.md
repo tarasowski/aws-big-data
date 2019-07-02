@@ -98,7 +98,7 @@ for key, value in sortedResults.items():
   * filter - filters the values from RDD
   * distinct - get unique values in RDD
   * smaple - get a sample for testing on large data set
-  * union, intersection, subraact, cartesian - intersection between two RDD's
+  * union, intersection, subtract, cartesian - intersection between two RDD's
     and combine them or exclude
 
 * Actions on RDD's (perform an action to get a result of RDD):
@@ -150,3 +150,253 @@ for key, value in sortedResults.items():
 # 2 1
 # 3 2 
 ``` 
+#### Key/value RDD
+* We can put key/value pairs into RDD (more structured data) and treat it sort
+  of like a database
+* For example: number of firends by age
+* Key is age, value is number of friends
+* Instead of just a list of ages or a list of # of friends, we can store (age,
+  # frieds), (age, # frieds)
+* Nothing special in Python really
+* If you store a (key, value) item than it's a key/value RDD
+* Just map pairs of data into the RDD for example
+
+```py
+totalsByAge = rdd.map(lambda x: (x, 1))
+```
+* It's also to have a complex value (lambda x: (x, [1,2,3,4]))
+* `reduceByKeys(): combine values witht the same key using some function
+  `rdd.reduceBykey(lambda x, y: x + y) adds them up
+* `groupByKey()` groups values with the same key
+* `sortByKey()` sorts RDD by key values
+* `keys(), values()` creates an RDD of just the keys, or just the values
+* It's like a giant key value store (database), therefore you can do SQL-style
+  joins on two key/value RDD'S
+* `join, rightOuterJoin, leftOuterJoin, cogroup, subtractBykey`
+* If your transformation doesn't affect the keys use `mapValues()` and
+  `flatMapValues()` since it's more efficient
+
+* Input Data: ID, name, age, number of friends
+
+```
+0,Will,33,385
+1,Jean-Luc,33,2
+2,Hugh,55,221
+3,Deanna,40,465
+4,Quarck,68,21
+``` 
+
+* The task is to figure out the average number of friends by age
+
+```py
+def parseLine(line):
+  fields = line.split(',')
+  age = int(fields[2]) # convert to int, to make arithmetic calculations later
+  numFriends = int(fields[3])
+  return (age, numFriends) # transforming into key/value RDD
+
+lines = sc.textFile('fakefrinds.csv')
+rdd = lines.map(parseLine)
+# Output key/value pairs of (age, numFriends)
+# 33,385
+# 33,2
+# 55,221
+# 40,465
+# 68,21
+
+totalsByAge = rdd.mapValues(lambda x: (x, 1).reduceByKey(lambda x, y: (x[0] +
+y[0], x[1] + y[1]))
+
+# rdd.mapValues(lambda x: (x, 1))
+# (33, 385) => (33, (385, 1))
+# (33, 2) => (33, (2, 1))
+# (55, 221) => (55, (221, 1))
+# reduceByKey(lambda x,y: (x[0] + y[0], x[1] + y[1]))
+# Adds up all values for each unique key!
+# (33, (387, 2))
+
+averagesByAge = totalsByAge.mapValues(lambda x: x[0] / x[1])
+# (33, (387, 2)) => (33, 193.5)
+results = averagesByAge.collect()
+for result in results:
+  print(result)
+sc.stop() # use sc.stop() to close the context on the local machine
+```
+* In the example above we have a compex type as a value `(33, (385, 1))`
+
+* Nothing happens in Spark until the first action is called, the first action
+  here is `reduceByKey()`
+
+* The other actions `collect()`. 
+
+* Spark goes and figure out the optimal way to compute before the action is
+  called (DAG), that's why spark is so fast.
+
+#### Filtering RDD's
+* Strip information from an RDD and create a smaller RDD
+* Just takes a functin that returns a boolean
+* For example, we want to filter out entries that don't have `TMIN` in the first
+  item of a list of data:
+
+```py
+minTemps = parsedLines.filter(lambda x: 'TMIN' in x[1])
+``` 
+
+* Input data snippet:
+
+* weatherStation id, date, obeservation type, temperatur
+```csv
+ITE001,1800101,TMAX,-75,,,E,
+ITE001,1800101,TMIN,-148,,,E,
+GM00018,1800101,PRCP,0,,,E,
+EZE00018,1800101,TMAX,-86,,,E,
+EZE00018,1800101,TMIN,-135,,,E
+``` 
+
+```py
+def parseLine(line):
+  fileds = line.split(',')
+  stationID = fields[0],
+  entryType = fields[2]
+  temperature = float(fields[3]) * 0.1 * (9.0 / 5.0) + 32.0 # fahrenheit
+  converion
+  return (stationID, entryType, temperature) # composite value out of primitive
+  values - complex data type
+
+line = sc.textFile('1800.csv')
+parsedLines = lines.map(parseLine)
+minTemps = parsedLines.filter(lambda x: 'TMIN' in x[1])
+stationTemps = minTemps.map(lambda x: (x[0], x[2])) # stripping out the TMIN
+value
+minTemps = stationTemps.reduceByKeys(lambda x, y: min(x,y)) # combine the x and
+y value and take the min value
+results = minTemps.collect()
+for result in results:
+  print(result[0] + "\{:.2f}F".format(result[1]))
+``` 
+
+#### flatMap() Count Words (map vs. flatMap)
+
+* map() transforms each element of an RDD into one new element. There is always
+  one to one relationship, map has to obey some laws such as identity,
+  composition.
+
+```py
+lines = sc.textFile('redfox.txt') 
+# The quick red 
+# fox jumped 
+# over the lazy 
+# brown dogs
+rageCaps = lines.mpa(lambda x: x.upper()) 
+# THE QUICK RED 
+# FOX JUMPED
+# OVER THE LAZY 
+# BROWN DOGS
+``` 
+
+* flatMap() can create many new elements from each one 
+* When you use flatMap() you can end up with an RDD that has more elements that
+  you started with
+
+```py
+lines = sc.textFile('redfox.txt') 
+# The quick red 
+# fox jumped 
+# over the lazy 
+# brown dogs 
+words = lines.flatMap(lambda x: x.split()) 
+# The
+# quick
+# red
+# fox
+# jumped
+# over
+# the 
+# lazy
+# brown
+# dogs
+``` 
+
+* In the example above it splits a line into multiple lines and output multiple
+  results. It returns a list of words and each item will become an entry of it's
+  own on the RDD. The `words` RDD end's up containing each individual word.
+  Where we started with 4 items in the original RDD one for each line, now it
+  has more elements
+
+```py
+from pyspark import SparkConf, SparkContext
+
+
+conf = SparkConf().setMaster('local').setAppName('Book')
+sc.stop()
+sc = SparkContext(conf = conf)
+
+input = sc.textFile('Book.txt') 
+# load up a text one line at the time, it's broken out into one paragraph per line
+
+words = input.flatMap(lambda x: x.split())
+# will take every individual line of text, breaks the line based on the
+whitespace into individual words
+wordCounts = words.countByValue()
+# countByValue() is a way to get how many times each unique value occurs
+# for every whitespace separated word in the book, we get how many times that
+word occurs
+
+for word, count in wordCounts.items():
+    cleanWord = word.encode('ascii', 'ignore')
+    if (cleanWord):
+        print(cleanWord, count)
+
+sc.stop()
+``` 
+
+* Text normalization: 
+  * Problem: word variants with different capitalization, punctuation, etc.
+  * There are fancy natural language processing toolkits like NLTK, but we'll
+    keep it simple, and use a `regular expression`
+
+```py
+import re
+from pyspark import SparkConf, SparkContext
+
+
+conf = SparkConf().setMaster('local').setAppName('Book')
+sc.stop()
+sc = SparkContext(conf = conf)
+
+def normalizeWords(text):
+    return re.compile(r'\W+', re.UNICODE).split(text.lower())
+
+input = sc.textFile('Book.txt')
+words = input.flatMap(normalizeWords)
+wordCounts = words.countByValue()
+
+for word, count in wordCounts.items():
+    cleanWord = word.encode('ascii', 'ignore')
+    if (cleanWord):
+        print(cleanWord, count)
+
+sc.stop()
+```
+* Sorting the results
+  * We cloud sort what countByValue() returns, but let's use RDD's to keep it
+    scalable
+  * First, do countByValue() the 'hard way':
+  * This is an example below what `countByValue()` actually does under the hood
+  * By doing this we can make our code scalable instead store values as a python
+    variable (data structure) we use the Spark code to make it scalable. In the
+    example above we store the result of `countByValue()` in a python data
+    structure, because `countByValue()` is an action.
+
+```py
+wordCounts = words.map(lambda x: (x, 1)).reduceByKey(lambda x, y: x + y)
+```
+* Convert each word to a key/value pair with a value of 1
+* Then count them all up with `reduceByKey()`
+
+* Flip the (word, count) pairt to (count, word)
+* Then use sortByKey() to sort by count (not that count is our new key)
+
+```py
+wordCountsSorted = wordCounts.map(lambda (x, y): (y, x)).sortByKeys()
+```
