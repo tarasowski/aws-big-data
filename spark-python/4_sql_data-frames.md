@@ -31,6 +31,7 @@ myResultDataFrame.rdd().map(mapperFunction)
 ```
 
 * In Spark 2.0, a DataFrame is a really a DataSet of Row objects
+* DataFrame is just an RDD of row objects
 * A Dataset is a DataFrame of structured data. It can contain more than just a
   row object it can contain a specific type of class (more important when you
   code in Scala or Java)
@@ -59,3 +60,21 @@ from pyspark.sql.types import IntegerType
 hiveCtx.registerFunction("suqare", lambda x: x*x, IntegerType())
 df = hiveCtx.sql("select square('someNumberField') from tableName)
 ``` 
+
+### JSON
+* If we are importing unstructured data such as text, we need first to convert
+  it to a DataFrame
+
+```py
+# Get the raw data
+lines = spark.sparkContext.textFile("file:///SparkCourse/ml-100k/u.data")
+# Convert it to a RDD of Row objects
+movies = lines.map(lambda x: Row(movieID =int(x.split()[1])))
+# Convert that to a DataFrame
+movieDataset = spark.createDataFrame(movies)
+```
+* But if we are loading a json file, it creates a DataFrame for us. We don't
+  need to convert anything, we can simply operate on it directly.
+
+* You need always to `spark.stop()` to close the session, it's like a connection
+  to a database.
