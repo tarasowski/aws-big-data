@@ -5,7 +5,8 @@
 * Let you deal with structured data instead of RDD's that can different
   information in every row, we can give our rows structure and treat RDD's as
   little databases. We will call them Data Frames and DataSets and you can
-  perform SQL-queries and SQL-like operations  
+  perform SQL-queries and SQL-like operations 
+* RDD is a data structure, a data structure is a composite of data types, a data type is a collection of related values
 * Extends RDD to a DataFrame object (imparting some structure)
 * DataFrames:
   * Contain Row objects
