@@ -155,8 +155,7 @@ for key, value in sortedResults.items():
   of like a database
 * For example: number of firends by age
 * Key is age, value is number of friends
-* Instead of just a list of ages or a list of # of friends, we can store (age,
-  # frieds), (age, # frieds)
+* Instead of just a list of ages or a list of # of friends, we can store (age, number of frieds)
 * Nothing special in Python really
 * If you store a (key, value) item than it's a key/value RDD
 * Just map pairs of data into the RDD for example
