@@ -697,6 +697,8 @@ OVERWRITE INTO TABLE ratings;
   * Good choice for task nodes
   * Only use on core & master if you're testing or very cost-sensitive; you're
     risking partial data loss
+    
+ ![instance types](https://p2zk82o7hr3yb6ge7gzxx4ki-wpengine.netdna-ssl.com/wp-content/uploads/ec2-instance-types-comparison.jpg)
 
 ### Amazon Machine Learning
 * ML with linear and logistic regression
