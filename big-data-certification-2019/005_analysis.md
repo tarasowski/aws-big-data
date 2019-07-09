@@ -270,7 +270,7 @@ analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/images/kinesi
   * Doesn't really care how the data is structured in S3 it can work with a Glue
     & Glue Data Catalog and impart structure on that data. 
 
-[Columnar](https://mariadb.com/files/inline-images/columnstore-row-vs-column-orientated_0.png)
+![Columnar](https://mariadb.com/files/inline-images/columnstore-row-vs-column-orientated_0.png)
 
 #### Some examples
 * Ad-hoc queries of web logs
