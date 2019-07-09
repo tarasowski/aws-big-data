@@ -103,6 +103,6 @@
 * Redshift Specturm can query the data from the Redshift as well as from S3.
   This is how you can mix the data.
 
-![dw lake](./img/dw-lake.png)
+![dw lake](./img/dwlake.png)
 
 
