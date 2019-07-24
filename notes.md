@@ -29,4 +29,61 @@ the client. Stagger windows are ideal for aggregating these logs for analysis.
 windows that open and close at regular intervals
   * Sliding Windows: A query that aggregates data continuously, using a fixed
 time or rowcount interval
+
+### KPL Key Concepts
+
+* A KPL user record is a blog of data that has particular meaning to the user.
+examples include a JSON blog prepresenting a UI event on a website, or a log
+entry from a web server
+
+* A Kinesis Data Streams record is an instance of the Record data structure
+defined by the Kinesis Data Streams service API. It contains a partition key,
+sequence number, and a blog of data
   
+#### Batching
+
+* Batchins refers to performing a single action on multiple items instead of
+repeatedly performing the action on each individual item
+* In this context the item is a record and the action is sending it to Kinesis
+Data Streams. In a non-batching situation, you would place each record in a
+separate Kinesis Data Streams record and make one HTTP request to send it to
+Kinesis Data Streams. With batching, each HTTP request can carry multiple
+records instead of just one.
+* The KPL supports two types of batching:
+  * Aggregation - Storing multiple records within a single Kinesis Data Streams
+record. Aggregation allows customers to increase the number of records sent per
+API call, which effectively increases producer thorughput. Kinesis Data Streams
+shards support up to 1,000 Kinesis Data Strems records pe second, or 1MB
+throughput.
+
+  * Collection - Using the API operation PutRecords to send multiple Kinesis
+Data Streams records to one or more shards in your Kinesis data stream. This
+increases throughput compared to using no collection because it reduces the
+overhead of making many separate HTTP requests. Collection differs from
+aggregation in that it is working with groups of Kinesis Data Streams records.
+The Kinesis Data Streams records being collected can still contain multiple
+records from the user.
+
+```
+record 0 --|
+record 1   |        [ Aggregation ]
+    ...    |--> Amazon Kinesis record 0 --|
+    ...    |                              |
+record A --|                              |
+                                          |
+    ...                   ...             |
+                                          |
+record K --|                              |
+record L   |                              |      [ Collection ]
+    ...    |--> Amazon Kinesis record C --|--> PutRecords Request
+    ...    |                              |
+record S --|                              |
+                                          |
+    ...                   ...             |
+                                          |
+record AA--|                              |
+record BB  |                              |
+    ...    |--> Amazon Kinesis record M --|
+    ...    |
+record ZZ--|
+``` 
