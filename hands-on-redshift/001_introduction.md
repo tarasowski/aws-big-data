@@ -49,7 +49,7 @@
       across a data set and pull out the dimensions and load it into 3
       dimensional table. Adding dimensions makes the data analysis complicated.
 
-![star](./img/star.png)
+![star](https://www.guru99.com/images/1/022218_0758_StarandSnow1.png)
 
 ### Shortcomings of Self-Owned DW
 * Costs
