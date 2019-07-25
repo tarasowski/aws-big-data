@@ -83,7 +83,7 @@ aws_secret_access_key=<secret-access-key>';
     * RDS sync
       * Not AWS native tool
 
-![data pipeline](https://dmhnzl5mp9mj6.cloudfront.net/bigdata_awsblog/images/Dataduct_Image_1a.png)
+![data pipeline](https://image.slidesharecdn.com/bdt207-131119114846-phpapp02/95/big-data-integration-analytics-data-flows-with-aws-data-pipeline-bdt207-aws-reinvent-2013-38-638.jpg)
 
 * VACUUM
   * Large # of DELETE/INSERT operations after initial load causes fragmentation
