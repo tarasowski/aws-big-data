@@ -47,4 +47,4 @@
 
 * All together
 
-![main](./img/main.png
+![main](./img/main.png)
