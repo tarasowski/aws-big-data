@@ -87,3 +87,59 @@ record BB  |                              |
     ...    |
 record ZZ--|
 ``` 
+
+
+# Whizlab Exam Iterations
+
+
+* Kinesis Analytics which options support collection, processing and playback of
+videos on demand?
+  * Creation, procesing are managed by Kinesis Video Streams while extraction of
+data from media sources is supported by Producer library
+  * HTTP live straming HLS or GetMedia API support viewing an Amazon Kinesis
+video strea, either for live playback or to view archived video
+    * HTTP Live Streaming HLS is an industry-standard HTTP-based media streaming
+      communication protocol. You can use HLS to view Kinesis video streams for live
+      playback or to view archived video
+    * GetMedia API allows building own apps to process Kinesis video streams.
+  * Kinesis Video Streams supports live playback or to view archived view
+through Kinesis Video Streams console
+
+* AWS ML
+  * Amazon ML uses logistic regression algorithm through binary classificatin to
+solve the business problem
+  * Amazon ML uses Area Under the (Receiver Operating Characteristic) Curve
+(AUC) to provide accuracy of the model
+  * Cross-validation is a technique for evaluating ML models by training several
+ML models on subsets of the available input data to detect overfitting which
+eventually fails to generalize the pattern
+
+* PMG Group has a lot of exisitng cusomter. They launched a campaign to sell new
+products. Management want to know the top 50 books and their quantity very day
+that will be sold
+  * Multinominal Regression algorithm addressing Multi-class classification
+  * Cross-validation for evaluating ML model sto detect overfitting
+
+* HH is using kinesis analytics to build SQL querying capability ons treaming
+and palling to use windowed queries to process the data. What kind of windows
+queries need to be used to aggregate data continuously, suing a fixed time or
+rowcount interfval for e.g. after 1 minute or after 2000 rows
+  * Sliding windows queries
+
+
+* ML Model Insights
+  * When you evaluate ML model, AWS provides metric and a number of insights to
+review the predictive accuracy of your model:
+    * A prediction accuracy metric to report on the overall success of the model
+    * Visualization to help explore the accuracy of your model beyond the
+prediction accuracy metric
+    * The ability to review the impact of setting a score threshold
+    * Alerts on criteria to check the validity of the evaluation
+
+* Recommendation of new products based on the history:
+  * AWS ML uses multi-nominal logistic regression algorithm through multi-class
+classification to solve the business problem
+  * Cross-validation is a technique for evaluation ML models by training several
+ML models on subsets of the available input data to detect overfitting which
+eventually fails to generalize the pattern
+  * Amazon uses macro-average F1 score to provide accuracy of the model
