@@ -260,7 +260,7 @@
        track consistency for you.
     * Uses DynamoDB to track consistency
   * Local file System: locally conntected disks. Useful for storing temp data,
-    buffers, scratch data, data that changes often.
+    buffers, scratch data (intermediate data - another defintion: scratch data is data used by your tool and deleted after your tool is run.), data that changes often.
   * EBS for HDFS: EMR automatically attaches EBS 10gb volume as the root device
     to enhance your performance. You can also save costs
     to reduce EBS if you don't needed. EMR will delete this values once the
