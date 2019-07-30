@@ -1,0 +1,6 @@
+* Search for youtube for videos:
+  * AWS Direct Connect
+  * AWS Machine Learning Algorithms
+  * Redshift Distribtuon
+  * VPC + Subnets + Gateways
+  * NAT + ENI
