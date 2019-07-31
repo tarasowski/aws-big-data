@@ -361,3 +361,167 @@ EalsticCache Cache View ---> CloudSearch Search View
 
 
 ![summary](./img/summary.png)
+
+
+
+### Some other notes:
+
+* Amazon ML uses the following learning algorithms:
+  * For binary classification, ML uses logistic regression
+  * For multiclass classification, ML uses multinominal logistic regression
+  * For regression, ML uses linear regression
+
+* Cross-validation is a technique for evaluating ML models by training several
+ML models on subsets of the available input data to detect overfitting which
+eventually fails to generalize the pattern
+
+* ML uses Area Under the (Receiver Operating Characteristic) Curve (AUC) to
+provide accuracy of the model
+
+
+* Binary Classification Model:
+  * ML models for binary classification problems predict a binary outcome. To
+train binary classification model ML uses logistic regression
+  * Is this email spam or not?
+  * Will the customer buy this product?
+  * I sthis product a book or a farm animal?
+  * I sthis review written by a customer or a robot?
+
+* Multiclass Classification Model
+  * ML modles for multiclass classification problems allow you to generate
+predictions for multiple classes (predict one of more than two outcomes), ML
+uses the multinominal logistic regression
+  * Is this product a book, movie or clothing?
+  * Is this movie a romantic comedy, documentary or thriller?
+  * Which category of products is most interesting for this customer?
+
+* Regression Model
+  * ML modles for regression problems predict a numeric value, ML uses linear
+regression
+  * What will the temperature be in Seattle tomorrow?
+  * For this product, how many units will sell?
+  * What price will this house sell for?
+
+
+* Kinesis Analytics Windows:
+  * For clickstream data use stagger windows
+  * Stagger = Staffel
+  * Tumbling = taumeln
+  * Sliding = schieben
+
+* In ML Visualizaiton explore the accuracy of your model beyond the prediction
+accuracy metric
+
+* Amazon ML uses macro-average F1 score to provide accuracy of the model
+  * F1 score is used to evaluate the predictive accuracy of a multiclass metric
+
+
+* Streaming
+  * Metrics configured for streams are automatically collected and pushed to
+CloudWatch every minute
+  * Metrics are archived for two weeks; after that period, the data is discarded
+  * Basic stream level data is captured every minute at no additional charge
+  * Shard-level data is sent every minute for an additional cost
+  * Enhanced shard-level metrics are being sent to cloudwatch every minute.
+These metrics are not enabled by default. There is a charge for enhanced metrics
+emitted from Kinesis
+
+* Pipeline:
+  * When AWS Data Pipeline runs a pipeline; it compiles the pipeline components
+to create a set of actionable instances
+  * Pipeline components represent the business logic of the pipeline and are
+represented by the different sections of a pipeline definition
+  * AWS Data Pipeline retries a failed operation. It continues to do so until
+the task reaches the max. number of allowed retry attempts.
+  * AWS Data Pipeline hands the instances out to task runners to process
+
+
+* AWS IoT Components:
+  * Device gateway: enables devices to securely and efficiently communicate with
+AWS IoT
+  * Message broker: Provides a secure mechanism for devices and AWS IoT
+applications to publish and receive messages from each other.
+  * Rules engine: Provides message processing and integration with other AWS
+services
+  * Security and Identity service: Provides shared responsitbility for security
+in the AWS Cloud. Your devices must keep their credentials safe in order to
+securely send data to the message broker
+  * Registry: organizes the resources associated with each device in the AWS
+Cloud. You register your device and associate up to three custom attributes with
+each one.
+  * Group registry: alloes you to manage several devices at one by categorizing
+them into groups
+  * Device shadow: a json document used to store and retrieve current state
+information for a device
+  * Device shadow service: provides persistent representations of your devices
+in the AWS Cloud. You can publish updated state information to a device's ahdow,
+and your device can sync its state when it connects. Your devices can also
+publish their current state to a shadows for use by applications or other
+devices
+  * Device provisioning service: allws you to provision devices using a template
+that describes the resources required for your device: a thing, a certificate,
+and one or more policies
+  * Custom auth service: you can define custom athorizers that allow you to
+manage your own authentication and authorization strategy using a custom
+authentication service and a lambda function
+  * Jobs service: allows you to define a set of remote operations that are sent
+to and executed on one or more devices connected to AWS IoT
+
+
+* Kinesis Analytics
+  * VPC flow Logs have a capture window of approx. 10 minutes. But they can have
+a capture window of up to 15 minutes if you're aggregating data on the client. A
+stagger windows query. A query that aggregates data using keyed time-based
+windows that open as data arrives. The keys allow for multiple overlapping
+windows. This is the recommended way to aggregate data using time-based windows
+
+  * A continuous filter is a common query that uses a where clause to select a
+portion of your data stream. For this specific query we will apply a filter on
+the "status" column to only select and records with equal "fail" and insert them
+into a subsequent stream. This common query is useful for alerting on events
+that match a particular query. Commonly, they are then forwarded on to other
+Kinesis streams, SNS topics or Lambda function
+(https://s3-us-west-2.amazonaws.com/kinesis-helpers/workshops/20170405-streaming-data/SF+loft+Kinesis+workshop.pdf)
+
+  * A tumbling window is similar to a periodic report, where you specify your
+query and a time range, and results are emitted a the end of a range ex: COUNT
+number of items by key for 10 seconds
+
+  * There are 3 different types of windows
+
+![windows](../img/baa-12-09-screenshot.png)
+
+* Tumbling:
+  * Fixed size and non-overlapping
+  * Use FLOOR() or STEP() function in a GROUP BY statement
+* Sliding:
+  * Fixed size and overlapping; row boundaries are determined when new rows
+enter window
+  * Use standard OVER and WINDOW claus (ex count(col) OVER(RANGE INTERVAL '5' MIN)
+
+* Tumbling windows are useful for periodic reports. You can use a tumbling window to compute an average number of visitors to your website in the last 5 minutes or the maximum over past hour. A single result is emitted for each key in the group as spcivied by the caluse the end of the defined window. An important characteristic of a tumbling window is that the bounds do not overlap; the start of a new tumbling window begins the wht end of the old window. 
+
+![tumbling](../img/e58-12-14-screenshot.png)
+
+* All of our previous window queries were using ROWTIME, which is the procesisng
+                                        time of the application. The processing
+                                        time is useful in many real-time use
+                                        cases like the previous exercise
+                                        (sliding window and filter). However
+                                        there are many cases where you need to
+                                        use your data's event time. An event
+                                        time is a stimestamp generated by a data
+                                        producer when the event was created. A
+                                        key problem with using event time is
+                                        that events arrive out of order. You
+                                        could perform sorts on the data but
+                                        sorts will leave events out which you
+                                        need to reconcile later. An alternative
+                                        approach to use both processing and
+                                        event time in your windows
+
+ 
+* Kinesis Firehose:
+  * Firehose provides the following Lambda blueprints that you can use to create
+                                        a lambda function for data
+                                        transformation
