@@ -167,3 +167,182 @@ comprehensive data security across the hadoop platform
 ![iam redshift](../img/87c-15-09-screenshot.png)
 
 ![encrypted cluster](../img/f6b-15-09-screenshot.png)
+
+
+* Sample Question #1
+  * You have close to 10 PB data in your data centers and are planning to use
+Snowball to move 6 PB data to AWS in the next few months. This data will be
+stored in S3 and will be used to implement the data lake architecture that your
+company envisions. **EMR will be used to process this data** and you have
+dtermined that the **average file size should be 10GB after compression**. To
+help with costs and to **save network bandwidth**, which would be the best
+compression algorithm to use? - gzip is not corret it does not support file
+splitting. snappy is not corrent because it also doesn't support file splitting,
+avro is not correct because avro is about data serialization. bzip2 is correct
+because it meets all the requirements
+
+
+### Social Media Mobile App
+* Scenario: You company has developed a **popular** mobile app that offers
+coupons for registered local businesses within the user's vicinity. Discounts
+are **valid only for a limited time**. Users of this app can rate the coupon and
+provide comments. The application then aggregates this feedback alsong with
+usage data for each business. A **major sporting event** is coming to the
+downtown area, and you need to ensure that the service can **scale** in an
+**cost-efficient** manner to deal with the **increased volume** in traffic
+during the event
+  * Possible questions:
+    * Ensure that service will scale in a cost-efficient manner?
+    * Prevent throttling?
+    * Collect data (such as user feedback and app usage) in real time?
+    * Le the local businesses view the feedback and usage data?
+
+![architecture](../img/43e-08-34-screenshot.png)
+
+
+* You can use timestamp as a sort key to retrieve data by days from start to the
+end
+
+![dynamodb](../img/981-09-02-screenshot.png)
+
+* When to use GSI vs. LSI
+  * Large scale integration can be modelled as a GSI
+  * If the datasize of an item collection is greater than 10GB, use GSI
+  * If eventuall consistency is okay, use global secondary index
+  * If you want to query a talbe on a non-key attribute use GSI
+* As the table grows the scan operation slows. For faster response times design
+your app to use query instead of scan
+
+* Preventing throttling
+  * 1 RCU 4kb (strong consistency) or 1 RCU 8kb (eventuall consistency)
+
+* Randomize partition keys to split the data evenly between partitions
+
+![partitions](../img/3a0-09-08-screenshot.png)
+
+* What is the max. throughput you can provision on a table? There is no
+theoretical limit. You can alaways add more partitions infinitely
+
+* What is consistency model for DAX? Eventually consistent reads. You can
+provision multiple DAX clusters for the same dynamodb table, these clusters can
+provide different endpoints to solve different scenario
+
+* Kinesis data streams for custom processing and realtime data
+* Kinesis Firehose is for data delivery into the target
+
+![data stream](../img/fd3-09-15-screenshot.png)
+
+* Preexisting data will not be incrypted?
+* Dynamodb global table to replicate your tables automatically across the
+regions you want to
+
+* How much data can you analyze with QuickSight? No need to worry about it
+* You can connect QuickSight to EC2 or on-premises database, you need to add
+Quicksight IP range to authorized list (whitelist) in your hosted database.
+
+
+### Clickstream Analysis
+* Your company serves **media content** to affiliate websites and mobile apps. How
+would you build a system to help your company's **analysts** optimize served
+content?
+
+* We know who is viewing our content through cookies
+* We have also a certain amount of information about affiliate websites
+* Combining this two pieces of information
+
+![architecture](../img/d10-09-31-screenshot.png)
+
+
+* If you ask the analysist about how fast they want to get the reporting result.
+They probably would say as quick as possible. By quickly they mean in real-time.
+But does real-time actually mean?
+
+![real time](../img/f3a-09-33-screenshot.png)
+
+* Realtime systems are expensive and more difficult.
+* It is important to consider characteristics of the system you are building
+* You need to know how you are going to ingest data 
+  * Real-time
+  * Micro batch
+  * Batching
+
+* Here we make a decision to use micro batching, getting results to an analyst
+in half an hour is acceptable
+
+* Collection mechanism: easy to deploy across many websites
+
+![architecture2](../img/8a8-09-35-screenshot.png)
+
+* Data can be transformed (lambda), encrypted (KMS), compressed (gzip)
+
+* Source data from one bucket -> EMR ---> put the data into another bucket
+processed data
+
+![emr](../img/a46-09-36-screenshot.png)
+
+* Spark SQL can read from Hive
+* Spark Streaming can read from Kinesis
+
+![sandbox](../img/ef7-09-37-screenshot.png)
+
+![architecture3](../img/d77-09-39-screenshot.png)
+
+![storage](../img/059-09-40-screenshot.png)
+
+* Columnar data is stored sequentially in the storage
+* On one block of the disk is all data you need, there are also values such as
+max/min on one block
+* Redshift is mpp (massive parallel processing system)
+  * Each slice is an independend partition of data and they work in parallel to
+speed up the execution
+
+* Distribution styles:
+  * Even: Distribute the rows across the slices in a round-robin fashion (default)
+    * Appropriate when a talbe does not participate in joins or where is not
+clear if to use key or all distribution
+  * Key: Distribute according to the values in one column
+    * The leader node will place the matching values on the same node slice 
+    * If you distribute a pair of table on the joining keys, the leader node
+will co-locate the rows to the slices according to the values in the joining
+values
+  * All: Distribute the entire table to every node
+    * Every row is co-located for every join that a table participates in
+    * It takes much longer to load and upsert data
+    * Only for slow-moving tables, that are not updated frequently
+
+
+* One important aspect to speed up Redshift is to use sort key
+  * When you create a table you define one or more of it's columns as it's sort
+keys
+  * When data is initially loaded into an empty table, the rows are stored on
+disk in sorted order. Information about the sort key columns is passed to the
+query planner and a planner uses this information to construct plans that
+exploit the ways that a data is sorted
+  * You can specify either a compound or interleaved sort key 
+  * A compound sort key is more efficient when a query predicates use a prefix
+  * Interleaved can give equal weigth
+
+* Redshift stores data in blocks, each block is marked with a metadata that
+includes the max and min values for the sort key. For example when you must a
+run a query in an unsorted table, you must look into 4 out of 5 blocks, to get
+the result. In a sorted table you look only in 1 block 
+
+![sort keys](../img/ae5-09-45-screenshot.png)
+
+* You can define of max 8 queues (max. queries are 50)
+* You can define the groups based on the importance of the group
+
+
+### Fraud Detection
+* Every day in a **large global** consulting comapny, all employees enter their
+timesheets into an online system that stores the data on-premises in a
+transactional database. At regular intervals during the day, **a batch ETL job
+loads the data into a data warehouse** to report on financials. You CFO is
+concerned about **potential incidents** of timesheets fraud and is interested in
+using machine learning to identify suspect timesheets in a timely manner.
+  * Questions:
+    1. How can you feed large volumes of data into your machine learning model
+       for generating predictions?
+    2. How can you analyze the data and build visualization and/or reports?
+
+

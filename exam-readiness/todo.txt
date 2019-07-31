@@ -4,3 +4,5 @@
   * Redshift Distribtuon
   * VPC + Subnets + Gateways
   * NAT + ENI
+  * Compression modes which file format is splittable
+  * Compound vs. Interleaved sort key
