@@ -489,7 +489,7 @@ number of items by key for 10 seconds
 
   * There are 3 different types of windows
 
-![windows](../img/baa-12-09-screenshot.png)
+![windows](./img/baa-12-09-screenshot.png)
 
 * Tumbling:
   * Fixed size and non-overlapping
@@ -501,7 +501,7 @@ enter window
 
 * Tumbling windows are useful for periodic reports. You can use a tumbling window to compute an average number of visitors to your website in the last 5 minutes or the maximum over past hour. A single result is emitted for each key in the group as spcivied by the caluse the end of the defined window. An important characteristic of a tumbling window is that the bounds do not overlap; the start of a new tumbling window begins the wht end of the old window. 
 
-![tumbling](../img/e58-12-14-screenshot.png)
+![tumbling](./img/e58-12-14-screenshot.png)
 
 * All of our previous window queries were using ROWTIME, which is the procesisng
                                         time of the application. The processing
@@ -525,3 +525,117 @@ enter window
   * Firehose provides the following Lambda blueprints that you can use to create
                                         a lambda function for data
                                         transformation
+  * General Firehose Processing: contains the data transformation and status
+                                        model described in the previous section.
+                                        Use this blueprint for any custome
+                                        transfromation logic
+  * Apache Log to JSON
+  * Apache Log to CSV
+  * Syslog to JSON: syslog is a standard for sending and receiving notification
+                                        messages-in a particular format-from
+                                        various network devices
+  * Syslog to CSV
+  * Firehosess Process Record Streams as source: accesses the kinesis data
+                                        streams records int he input and returns
+                                        them with a processing
+  * Firehose CloudWatch Logs Processor: parses and extracts incividual log
+                                        events from records sent by CloudWatch
+                                        logs subscription filter 
+
+
+* Redshift / Storage
+* when the administrator is not availabe nad we are not sure of the workload, it
+                                        is always better to go with no
+                                        distribtuion style because Redshift
+                                        handles the distribution mechanism
+
+* DynamoDB applies adaptive capacity in real time in response to changing
+application traffic patterns, which help you maintain uninterrupted prefromance
+indefinitely, even for imbalanced workloads. In addition, instan adaptive
+capacity helps you provision read and write throughput efficiently instead of
+overprovisioning to accomodate uneven data access patterns. Instant adaptive
+capacity is on by default at no additional cost ofr all DynamoDB tables
+
+* Amazon ElasticSearch doesn't support COPY command to load data into Redshift.
+The COPY command loads data in parallel from S3, EMR, DynamoDB or multple data
+sources on remote hosts. COPY loads large amount of data much more efficiently
+than using INSERT statements, and stores the data more effectively as well.
+Integration of COPY command with Elasticsearch is not supported
+
+* What types of table/views can help access the performance related infor for
+diagnosis?
+  * STL system table are generated from Redshift log files to provide a history
+of the system. They server Logging
+  * STV tables are actually virtual system tables that contain snapshots of the
+current system data. They server snapshots
+  * The system catalog store schema metadata, such as information about tables
+and columns
+
+
+* Visualisation:
+  * Combo chart: on the clustered bar combo chart, bars display for each child
+dimension, grouped by the parent dimension. On the stacked bar combo chart, one
+bar displays per parent dimension
+
+![combo
+  chart](http://www.k12science.org/curriculum/weatherproj2/images/graph_combo.gif)
+  * The team identified a dataset that they want to delete, on which some
+analysis is already generated. They submitted the deletion. What happens next?
+  * You receive a warning if you have any analysises that use the data set you
+have chosen for deletion
+  * Dataset deletion does not delete the dependet analysis
+  * Next time you open any of those analyses, you are prompted to select a new
+data set for any visuals that wer based on the delelted dataset
+
+* EMR Notebooks is a Jupyter Notebook environemtn built in to the EMR console
+that allows you to quickly create Jupyter notebooks, attach them to Spark
+cluster, and then open the Jupyter Notebook in the console to remotely run
+queries. EMR notebook is saved in S§ independently from clusters for durable
+storage, quick access, and flexibility. You can have multiple notebooks open,
+attach multiple notebooks to a single cluster and re-use a notebook on different
+clusters
+* Jupyter Notebook is an open-source web application that you can use to create
+and share documents that contain live code, equations, visualizations, and
+narrative text. JupyterHub allows you to host multiple instances of a
+single-user Jupyter notebook server. When you create a cluster with JupyterHub,
+EMR creates a Docker container on the cluster's master node. JupyterHub, alls
+the components required for Jupyter and Sparkmagic run within the container
+
+
+* IoT
+  * Device shadow is a json document used to store and retreive current state
+information for a device
+  * Device shadow service provides persistent representations of your devices in
+the AWS Cloud
+
+* Security
+  * Read the question: "TI launched EMR 3.2.1 using EMRFS storage to support
+their real-time data analytics"... S3 server-side encryption with KM is not
+available when using EMR version 4.4 or earlier
+  * You can use AWS KMS customer master key (CMK) set up with policies suitable
+for EMR
+  * With S3 client-side encryption, the Amazon S3 encryption and decryptin takes
+place in the EMRFS client on your cluster. Objects are encrypted before being
+uploaded to S3 and decrypted after tehy are downloaded. The provider you specify
+supplies the encryption key that the client uses. The client can use keys
+provided by AWS KMS (CSE-KMS) or a custom Java sclass that provides the
+client-side master key CSE-C. The encrytpin specifiecs are slightly differnt
+between CSE-KMS and CSE-C.
+  * You cannot audit of encryption and decryption of AWS owned CMK using AWS
+CloudTrail
+  * Redshift database security:
+    * Groups are collections of users that can be collectively assigned
+privileges for easier security maintenance
+    * By default privileges are granted only to the object owner
+    * Redshift database users are named user accounts that can connect to a
+database. A user account is granted privileges explicitly, by having those
+privileges assigned directly to the account or implicitly by being a member of a
+group that is granted privileges
+    * Schemas are collections of database tables and other database objects.
+Schemas are similar to operatinng sytem directoreis, except that schemas cannot
+be nested
+  * Amazon ElasticSearch: When encryption of data is enabled, what all aspects
+of domain are encrypted?
+    * Automated snapshots
+    * Elasticsearch logs
+    * Swap files
