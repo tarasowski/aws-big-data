@@ -345,4 +345,52 @@ using machine learning to identify suspect timesheets in a timely manner.
        for generating predictions?
     2. How can you analyze the data and build visualization and/or reports?
 
+![architecture](../img/c7d-10-05-screenshot.png)
 
+* EMRFS to store data in S3DistCp to copy the data to Amazon S3 to terminate
+your cluster
+
+![erm](../img/76e-10-10-screenshot.png)
+
+* S3 bucket have a limit on get/put requests
+
+
+* Amazon Athena uses Apache Hive for DDL (data definition language - alter, create) functionality
+  * Complex data types
+  * Multitude of formats
+  * Supports data partitioning
+* Amazon Athena uses Teradata Presto for SQL queries (DML - data manipulation
+                                                    language, select)
+  * In-memory distributed query engine
+  * ANSI-SQL compatible with extentions
+* Hive is optimized for query throughput (amount)
+  * better for daily or weekly reports
+* Presto is optimized for query latency (speed)
+  * has a limit
+
+
+* Amazon best practices:
+  * Partitioning:
+    * Reduce the amount of data scanned
+    * Read only files necessary for queries
+  * Compression:
+    * Splittable files allows Athena's execution engine to split the reading of
+a file by multiple readers to increase parallelism
+  * Columnar formats for analytics
+    * Optimize column-based reads
+    * Use Parquet and ORC
+
+* Athena provides asynchronous interaction model using Athena API supports:
+  * Named queries
+  * Column data and metadata
+  * Integration with existing data access tools
+  * Paginated results sets
+* You can issue a call to Athena you'll get the query id back, so you can check
+if the query is ready to receive the data back
+
+
+![analytics services](../img/3d7-10-29-screenshot.png)
+
+* Partitions acts as virtual columns
+* You can create partition while you specify your table
+* You run a query, create a new table and run other query agains the new table
