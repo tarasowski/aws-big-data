@@ -1,6 +1,136 @@
-# My Notes from the Web or Other Courses
+# Question that I didn't know
 
-### Amazon Kinesis Analytics Streaming SQL Concepts
+
+* Binary classification whether the customer will subscribe to new product or
+not ML models for binary classification predict a binary outcome. To train
+binary classification models, AWS uses logistic regression. It uses Are Under
+the (Receiver Operating Characteristic) Curve (AUS) to predict the accuracy
+
+* ML modles for multiclass classification problems allow you to geneate
+predictions for multiple classes. In Amazon ML, the macor-average F1 score is
+sused to evaluate the predictive accuracy of a multiclass metric
+
+* ML models for regression problems predict a numeric value. ML uses root square
+error (RMSE) metric
+
+* Redshift: split your load data files so that the files are about equal size, between 1MB
+and 1GB after compression. For optimum parallelism, the ideal size is between
+1MB and 125MB after compression
+
+* Redshift: Manifest files address eventual consistency issues during loads. S3
+provides eventual consistency for some operations. It's possible that new data
+won't be available immediately after the upload. You can manage data consistency
+by using a manifest file to load data
+
+* You can create chatbots with Amazon Lex service
+
+
+* Using DynamoDB auto scaling is the recommended way to manage throughput
+capacity settings for replica tables that use the provisioned mode. Auto scaling
+automatically adsjusts read capacity units (RCUs) and write capacity units
+(WCUs) for each replica table based upon your actual application workload
+
+
+* How TTL works in DynamoDB:
+  * A background job checks the TTL attribute of items to see if they are
+expired
+  * If the epoch time value stored in the attribute is less than the current
+time, the item is marked as expired and subsequently delted
+
+
+* If the list and the set of object processed is incomplete on EMR:
+  * Enable consistent view. This allows EMR clusters to check for list and
+read-after-write consistency
+  * EMR uses DynamoDB database to store object metadata and track consistency
+with EMRFS Storage
+
+
+* Which commands can you use to understand the metadata of the Redshift
+architecture?
+  * STL table are generated from logs that have been persisted to disk to
+provide a history of the system. These files reside on every node in the data
+warehouse cluster. The STL tables take the information from the logs and format
+them intu usable tables for system
+  * STV tables are virtual tables that contain snapshots of the current system
+data
+  * System tables and views do not use the same consistency model as regular
+tables
+  * System views that contain any reference to a transient STV table are called
+SVV views and references to STL tables are called SVL views
+
+
+* Key steps in provisioning of devices IoT
+  * Enable a device with an existing certificate or have AWS IoT create and
+register one for you
+  * Define device shadow service to get and set the state of a device over MQTT
+or HTTP
+  * Assign a policy attached to the certificate and define unique identifier for
+the thing (device)
+  * Define set of attributes for the thing, including existing thing types and
+groups
+
+
+* HH using kinseis agent to process events and uses consumer libraray to collect
+and disseminate streams. What kind of monitoring is enabled by kinesis agent?
+  * The agent publishes custom CloudWatch metrics with a namespace of
+AWSKinesisAgent
+  * The agent publishes Bytes sent, number of records attempted, number of
+records that returned failure and the number of calls to PutRecords that
+resulted in a service error
+
+
+* Data Pipeline DataNode: In AWS Data Pipeline, a data node defines the location and type
+of data that a pipeline activity uses as input or output. AWS Data Pipeline
+supports the following types of data nodes:
+  * DynamoDBDataNode: A DynamoDB table that contains data for HiveActivity or
+EmrActivity to use
+  * SqlDataNode: An SQL table and database query that represent data for a
+pipeline activity to use
+  * RedshiftDataNode: Redshift table that contains data for RedshiftCopyActivity
+to use
+  * S3DataNode: S3 location that contains one or more files for a pipeline
+activity to use
+
+* Data Pipeline Activity: an activity is a pipeline component that defines the work to
+perform. Data Pipeline provides several pre-packaged activities that accomodate
+common scenarios, such as moving data from one location to another, running Hive
+queries, and so on. 
+  * CopyActivity: copies data from one location to another
+  * EmrActivity: runs an EMR cluster
+  * HiveActivity: runs a Hive query on EMR
+  * HiveCopyActivity: runs a Hive query on EMR with support for advanced data
+filtering and support for S3DataNode 
+  * PigActivity: runs a Pig script on EMR
+  * RedshiftCopyActivity: copies data to and from Redshift tables
+  * ShellCommandActivity: runs a custom unix/linux shell command as an ectivity
+  * SqlActivity: runs a SQL query on a database
+ 
+* Data Pipeline Databases: supports the following types of databases:
+  * JdbcDatabase
+  * RdsDatabase
+  * RedshiftDatabase
+
+* Data Pipeline Taskrunners:  A task runner is an application that polls AWS Data Pipeline for tasks and
+then performs those tasks. Can be used and installed on-premise components
+
+* Data Pipeline Actions: are steps that a pipeline component takes when certain
+events occur, such as success, failure, or late activities. 
+
+* Data Pipeline Resource: a resource is the computattional resource that
+performs the work that a pipeline activity specifies. AWS Data Pipeline supports
+the following types of resources:
+  * Ec2Resource: An EC2 instance that performs the work defined by a pipeline
+activity
+  * EmrCluster: EMR cluster that performs the work defined by a pipeline
+activity such as EmrActivity
+
+
+* AWS Migration Hub provides a single location to track the progress of
+application migrations across multiple AWS and partner solutions. Using
+Migration Hub allows you to choose the AWS tools that best fit your needs, while
+providing visibility into the status of migrations across your portfolio of
+applications
+
 
 * In-Application Streams and Pumps: When you configure application input, you
 map a streaming source to an in-application stream that is created. Data flows
@@ -27,6 +157,7 @@ they can have a capture window of up to 15 minutes if you're aggregating data on
 the client. Stagger windows are ideal for aggregating these logs for analysis.
   * Tumbling Windows: A query that aggregates data using distinct time-based
 windows that open and close at regular intervals
+
   * Sliding Windows: A query that aggregates data continuously, using a fixed
 time or rowcount interval
 
@@ -143,228 +274,6 @@ ML models on subsets of the available input data to detect overfitting which
 eventually fails to generalize the pattern
   * Amazon uses macro-average F1 score to provide accuracy of the model
 
-
-# Big Data Architectural Patterns
-
-[Source](https://www.youtube.com/watch?v=a3713oGB6Zk)
-[Slides](https://www.slideshare.net/AmazonWebServices/abd201big-data-architectural-patterns-and-best-practices-on-aws?qid=50b8b8c9-ebf7-4c12-9c5c-acde09a1547f&v=&b=&from_search=1)
-
-### Ever increasing big data:
-* Volume
-* Velocity
-* Variety
-  * In addition to text, we are getting audit (siri, alexa) and video 
-
-### Big Data Evolution
-* Batch processing (Hive) - 10 years ago
-  * Stream processing (real-time stream processing) - now
-    * Artifical Intelligence: take the pipelines and make batch and real-time predictions
-      * Virtual machines (ec2 instnances with ebs and local disks with your
-                          software)
-        * Managed services (RDS + EMR)
-            * Serverless (DynamoDb, you simply specify what you want here is the
-                          table here is the primary key, you don't worry about
-                          servers, you worry about your programming abstractions)
-
-### Big data challenges?
-* Is there a reference architecture?
-* What tools should I use?
-* How?
-* Why?
-* How I enable IA of to my application?
-
-
-### Architectural principles?
-* Build decouples systems:
-  * Data -> Store -> Process -> Store -> Analyze -> Answers
-  * Decouple storing from compute (we replaced Hive to Spark)
-* Use the right tool for the job
-  * Data structure, latency, throughput, access patterns
-  * If we do build a tool, we want to cover 1-2 cases very well
-  * One size doen't fit all
-* Leverage managed and serverless services
-  * Scalalbe/elastic, available, reliable, secure, no/low admin
-* Use log-centric design patterns
-  * Immutable logs (data lake), materialized views
-  * In many question we don't know the questions some one will ask, you need to
-have appended structure / immutable data. You can store historical data, and if
-you want to build a model you can use that data, you don't need to get a new
-data set for that, **DON'T DELETE ANYTHING**
-  * Materialized view: If you have services like elastic search or data
-warehouse, you can see these services as simply a VIEW on top of your immutable
-data. That you will put in your data in your data lake. Your data lake is like a
-blockchain, a big immutable ledger
-* Be cost-conscious
-  * Big data not equal big costs, pick the cheapest service
-* Think of IA/ML enable your applications:
-  * Think about if you collect some data, if you need later to enable AI/ML
-how/what should I collect
-
-### Simplify Big Data Processing
-
-* Data --> Collect --> Store ---> Process/Analyze ---> Consume ---> Answers
-  * Store --> Process/Analyze is in cycle, you go forth and back
-
-* Pipeline latency how long you have time to answer. How fast you want your data
-to be materialized (Latency)
-  * What is the view, or report, let me shape the data in form of your report 
-* Pipeline Throughput, how much data will be processed per second
-* Costs: how much are you going to pay for this application
-
-
-### Data Characteristics
-
-![cold](./img/data-temp.png)
-
-* Having the sense with what type of data you're dealing helps you to pick the
-right tools
-
-
-### Collect
-
-![data types](./img/data-types.png)
-
-
-### Why Stream Storage?
-* Decouple producers & consumers
-* Persistent buffer (24hr to 7 days)
-* Collect multiple streams
-* Preserve client ordering (producer data will get to specific shard always - so
-                            you build windows or make some analysis min/max on
-                            data)
-* Parallel consuming
-* Streaming MapReduce
-
-
-### What about AWS SQS
-* No client ordering
-* No streaming MapReduce (no separation into partitions)
-* No parallel consuming
-  * Visibility timeout - if one client consume something, the other consumers
-can't see the message
-* Data can be retrieved only once and gets deleted
-
-
-![compare](./img/comparison.png)
-
-* Important: If you're using Kinesis there could be the case that the records
-are doubled. You should deduping your system using DynamoDB. But in Kafka it's
-already built-in.
-
-### Use S3 as Your Persistent File Store
-* Natively supported by big data frameworks (Spark, Hive, Presto)
-* Decouple storage and compute
-  * No need to run compute clusters for storage (unlike HDFS)
-  * Can run trnasient EMR clusters with EC2 Spot Instances
-  * Multiple & heterogeneous analysis clusters and services can use the same data
-
-### What About HDFS & Data Tiering
-* More and more HDFS is used like a cache for your hot data sets
-* Use HDFS for hottest datasets (e.g. interative read on the same datasets)
-* Use S3 different tiers for different data temperature
-* Use S3 Aanlytis to otpimize tiering strategy
-
-
-### Materilaized View
-* Application ---> DynamoDB ----> Stream ----> Lambda ---> S3 Immutable log / Kinesis Consumer --->
-EalsticCache Cache View ---> CloudSearch Search View
-
-
-![mat-view](./img/mat-view.png)
-
-
-### Which data store should i use?
-
-* You store the data in the form you access it
-* Data structure -> Fixed schema, JSON, Key/Value
-* Access patterns -> Store data in the form you access it
-* Data characteristics -> Hot, warm, cold
-* Cost - Right cost
-
-* Data structure
-  * Fixed Schema: SQL, NoSQL
-  * Schema-free (JSON): NoSQL, Search
-  * Key/Value: In-memory, NoSQL
-  * Graph: GraphDB
-* Access patterns
-  * Put/Get (key, value): In-memory, NoSQL
-  * Simple relationships -> 1:N, M:N: NoSQL
-  * Multi-table joins, transaction, SQL: SQL
-  * Faceting, Search: Search (Elastic Search)
-  * Graph traversal: GraphDB
-
-* Faceted search is a technique which involves augmenting traditional search techniques with a faceted navigation system, allowing users to narrow down search results by applying multiple filters based on faceted classification of the items. Basically the amazon.com search on the website
-
-![map](./img/map.png)
-
-
-![map2](./img/map2.png)
-
-
-![pricing](./img/price.png)
-
-
-### Predictive Analytics
-* API Driven Services
-  * Amazon Lex - Speech recognition
-  * Amazon Polly - Text to speech
-  * Amazon Rekognition - Image analysis
-  * Amazon Comprehension - Text classification
-* Managed ML Platforms
-  * Amazon ML
-  * Spark ML on EMR
-* Deep Learning AMI (Amazon Machine Learning)
-  * Pre-instlal with MXNet, TensorFlow, Caffe2, Theano, Torch, Keras
-
-
-### Interactive and Batch Analytics
-* Amazon ES
-  * Managed Service for Elasticsearch
-* Amazon Redshift and Amazon Redshift Spectrum
-  * Managed Data Warehouse
-  * Spectrum enables querying S3
-* Amazon Athena
-  * Serverless Interactive Query Service
-* Amazon EMR
-  * Hadoop, Spark, Flink, Presto, Tez, Hive, Pig, HBase
-
-
-### Stream / Real-time Analytics
-* Spark Streaming on EMR
-* Kinesis Analytics
-* Kinesis KCL (library for stream processing - checkpointing)
-* AWS Lambda
-
-
-### Which Analytics Should I use?
-
-![analytics](./img/analytics.png)
-
-
-### Which Stream Processing Technology Should I use?
-
-![streaming](./img/streaming.png)
-
-
-### Which Analytics Tools Should I use?
-
-![analytics](./img/analytics2.png)
-
-
-![full map](./img/full-map.png)
-
-
-![mental map](./img/mental-map.png)
-
-
-![data lake](./img/data-lake.png)
-
-
-![summary](./img/summary.png)
-
-
-
-### Some other notes:
 
 * Amazon ML uses the following learning algorithms:
   * For binary classification, ML uses logistic regression
@@ -639,3 +548,75 @@ of domain are encrypted?
     * Automated snapshots
     * Elasticsearch logs
     * Swap files
+
+
+* Athena: To run question in Athena, you ust have the appropriate permissions
+for:
+  * The Athena actions
+  * The S3 locations where the underlying data is stored that you are goingt to
+query in Athena
+  * The resources that you store in AWS Glue Data Catalog, such as databases and
+tables, that you are going to query in Athena
+  * The encrypted metadata in the AWS Glue Data Catalog. If you migrated to
+using that metadata in Athena and the metadata is encrypted
+
+
+* Apache Phoenix is used for OLTP and poerational analytics, allowing you to use
+standard SQL queries and JDBC APIs to work with an Apache HBase backing store
+
+
+* What kind of windows queries need to be used to aggregate data using keyed
+time-based windows that open as data arrives:
+  * Stagger Windows Queries
+
+
+* ML data sources can be created only for RDS, Redshift and S3
+* ML provides 3 options to split datasets:
+  * Pre-split data
+  * Sequential split
+  * Random split
+* ML AttributeType includes Binary, Categorical, Numeric and Text datatypes
+
+* End-to-End data encryption for all the data that is being accessed through
+Athena for both data in S3 and also encrypted results
+  * Server-side encryption (S3) with an S3-managed Key (SSE-S3) for encrypted
+datasets in S3 and for encrypted query
+  * Server-side encryption (SS3) with AWS KMS customer managed key (SSE-KMS)
+  * Client-side encryption (CSE) with a AWS KMS customer managed key (CSE-KMS)
+
+
+* Data Protection in Amazon Kinesis Data Firehose
+  * You can enable server-side data encryption when you use Firehose. How you do
+this depends on the source of your data
+    * Server-side encryption with Kinesis Data Streams as the Data Sources: whn
+you configure a kinesis data stream as the data source of Firehose delivery
+stream, Kinesis Data Firehose no longer stores the data at rest. Instad, the
+data is stored in the data stream
+    * Server-side encryption with direct put and other data sources: If you send
+data to your delivery stream using PutRecord or PutRecordBatch, or if you send
+your data using IoT, you can turn on server-side encryption by using the
+StartDeliveryStreamEncryption operation
+
+
+* Kinesis Stream provide capabilite to use Future objects to validate
+UserRecords. No need to complicate the code by storing in memory/transient
+storage
+
+* Redshift query optimizer uses sort order when it determines optimal query
+plans. Choose the optimal sort key to address querying of most recent data,
+frequent range filtering or equality filtering and joining of multiple tables
+
+
+* Amazon DynamoDb: distribute your upload work by using the sort key to load one
+item from each partition key value, then another item from each partition key
+value and so on???
+
+
+* Jupyter Notebook is an open-source web application that you can use to create
+and share documents that contain live code, equations, visualization and
+narrative text. Amazon EMR offers you two options to work with Jupyter
+notebooks:
+  * EMR notebook
+  * JupyterHub
+    
+
