@@ -629,3 +629,15 @@ emr](https://aws.amazon.com/blogs/big-data/best-practices-for-securing-amazon-em
   password combination (it can be only used for QuickSight)
 * Which at rest encryption is not supported by Redshift? LUKS (this is only for
   EMR) 
+  
+* EMR security at rest / in transit:
+**Data at rest**
+* Data residing on Amazon S3—S3 client-side encryption with EMR
+* Data residing on disk—the Amazon EC2 instance store volumes (except boot volumes) and the attached Amazon EBS volumes of cluster instances are encrypted using Linux Unified Key System (LUKS)
+
+**Data in transit**
+* Data in transit from EMR to S3, or vice versa—S3 client side encryption with EMR
+* Data in transit between nodes in a cluster—in-transit encryption via Secure Sockets Layer (SSL) for MapReduce and Simple  Authentication and Security Layer (SASL) for Spark shuffle encryption
+* Data being spilled to disk or cached during a shuffle phase—Spark shuffle encryption or LUKS encryption
+
+Link: https://aws.amazon.com/blogs/big-data/secure-amazon-emr-with-encryption/
